@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<c:Control xmlns:c="http://www.ansys.com/control" schemaVersion="1.0">
+
+  <Stackup schemaVersion="1.0">
+    <Materials>
+      <Material Name="FR3.6_0.025">
+        <Permittivity>
+          <Double>3.6</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.025</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR3.71_0.015">
+        <Permittivity>
+          <Double>3.71</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.015</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR3.725_0.0145">
+        <Permittivity>
+          <Double>3.725</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.0145</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR4.055_0.013">
+        <Permittivity>
+          <Double>4.055</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.013</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR4.22_0.011">
+        <Permittivity>
+          <Double>4.22</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.011</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="copper">
+        <Conductivity>
+          <Double>58004640.3712297</Double>
+        </Conductivity>
+      </Material>
+    </Materials>
+    <Layers LengthUnit="mil">
+      <Layer Color="#264a33" Material="FR3.6_0.025" Name="TSM" Thickness="0.8" Type="dielectric"/>
+      <Layer Color="#00ff00" EtchFactor="-2.500000000000002" FillMaterial="FR3.6_0.025" Material="copper" Name="Top Layer" Thickness="1.5" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR3.71_0.015" Name="Dielectric 2" Thickness="2.53" Type="dielectric"/>
+      <Layer Color="#ffff00" EtchFactor="-2.500000000000002" FillMaterial="FR3.71_0.015" Material="copper" Name="L2_IN1" Thickness="0.9" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR3.725_0.0145" Name="Dielectric 3" Thickness="2.04" Type="dielectric"/>
+      <Layer Color="#70dbfa" EtchFactor="-2.500000000000002" FillMaterial="FR3.725_0.0145" Material="copper" Name="L3_GND" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR3.71_0.015" Name="Dielectric 4" Thickness="2.61" Type="dielectric"/>
+      <Layer Color="#00cc66" EtchFactor="-2.500000000000002" FillMaterial="FR3.71_0.015" Material="copper" Name="L4_IN2" Thickness="0.59" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR4.055_0.013" Name="Dielectric 5" Thickness="2.36" Type="dielectric"/>
+      <Layer Color="#d9ead3" EtchFactor="-2.500000000000002" FillMaterial="FR4.055_0.013" Material="copper" Name="L5_GND" Thickness="1.18" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR4.22_0.011" Name="Dielectric 1" Thickness="30.63" Type="dielectric"/>
+      <Layer Color="#00ffff" EtchFactor="-2.500000000000002" FillMaterial="FR4.22_0.011" Material="copper" Name="L6_VCC" Thickness="1.18" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR4.055_0.013" Name="Dielectric 6" Thickness="2.36" Type="dielectric"/>
+      <Layer Color="#8e7cc3" EtchFactor="-2.500000000000002" FillMaterial="FR4.055_0.013" Material="copper" Name="L7_VCC" Thickness="0.59" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR3.71_0.015" Name="Dielectric 7" Thickness="2.61" Type="dielectric"/>
+      <Layer Color="#ff00ff" EtchFactor="-2.500000000000002" FillMaterial="FR3.71_0.015" Material="copper" Name="L8_GND" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR3.725_0.0145" Name="Dielectric 8" Thickness="2.04" Type="dielectric"/>
+      <Layer Color="#808000" EtchFactor="-2.500000000000002" FillMaterial="FR3.725_0.0145" Material="copper" Name="L9_IN3" Thickness="0.9" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#808080" Material="FR3.71_0.015" Name="Dielectric 9" Thickness="2.53" Type="dielectric"/>
+      <Layer Color="#ff9900" EtchFactor="-2.500000000000002" FillMaterial="FR3.71_0.015" Material="copper" Name="Bottom Layer" Thickness="1.5" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#44614c" Material="FR3.6_0.025" Name="BSM" Thickness="0.8" Type="dielectric"/>
+      <Layer Color="#ffff00" Name="Top Overlay" Type="silkscreen"/>
+      <Layer Color="#ffffff" Name="Top Solder" Type="soldermask"/>
+      <Layer Color="#ff00ff" Name="Bottom Solder" Type="soldermask"/>
+      <Layer Color="#808000" Name="Bottom Overlay" Type="silkscreen"/>
+      <Layer Color="#000000" Name="Outline" Type="outline"/>
+    </Layers>
+  </Stackup>
+
+</c:Control>
