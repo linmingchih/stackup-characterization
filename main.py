@@ -16,6 +16,6 @@ result = subprocess.run(
     text=True
 )
 
-with open('data/result.json') as f:
+with open('tmp/result.json') as f:
     loss = json.load(f)
     print(loss)

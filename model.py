@@ -23,7 +23,7 @@ print(edb.stackup.signal_layers.items())
 setup = edb.hfss.add_setup()
 #sweep = setup.add_frequency_sweep()
 
-edb.save_edb_as('data/pcb.aedb')
+edb.save_edb_as('tmp/pcb.aedb')
 
 #%%
 width = 2
@@ -73,7 +73,7 @@ for n, (layer_name, layer) in enumerate(signal_layers):
                 
 
 
-        edb.save_edb_as('data/pcb.aedb')
+        edb.save_edb_as('tmp/pcb.aedb')
         edb.close_edb()
 
                 

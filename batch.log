@@ -1,0 +1,65 @@
+ 
+Ansys Electronics Desktop Version 2025.1.0, Build: 2024-11-30 15:03:33
+Location: C:\Program Files\ANSYS Inc\v251\AnsysEM\ansysedt.exe
+Non Graphical Mode: No Project??
+Starting Batch Run: 9:53:41 AM  Oct 02, 2025
+Running as user : ANSYS\mlin
+Temp directory: C:\Users\mlin\AppData\Local\Temp
+Project directory: D:\OneDrive - ANSYS, Inc\Documents\Ansoft
+-- Message Window --
+      *Global - Messages
+        [info] GRPC server running on port: 59221. 
+        [info] OpenGL Version: 4.6.0 - Build 32.0.101.6881
+        [info] EDB folder tmp/pcb.aedb has been imported to project pcb
+        [info] Active Design set to 0;Cell_1AOPB3
+        [info] Active Design set to 0;Cell_1AOPB3
+        [info] Aedt Objects correctly read
+        [info] Project pcb Saved correctly
+        [info] Solving all design setups. Analysis started...
+        [info] Design setup None solved correctly in 0.0h 0.0m 29.0s
+        [info] Parsing D:\OneDrive - ANSYS, Inc\a-client-repositories\quanta-stackup-characterization-202510\stackup characterization\tmp\pcb.aedt.
+        [info] File D:\OneDrive - ANSYS, Inc\a-client-repositories\quanta-stackup-characterization-202510\stackup characterization\tmp\pcb.aedt correctly loaded. Elapsed time: 0m 0sec
+        [info] aedt file load time 0.04700660705566406
+        [info] PostProcessor class has been initialized! Elapsed time: 0m 0sec
+        [info] Post class has been initialized! Elapsed time: 0m 0sec
+        [info] Loading Modeler.
+        [info] Modeler loaded.
+        [info] EDB loaded.
+        [info] Layers loaded.
+        [info] Primitives loaded.
+        [info] Modeler class has been initialized! Elapsed time: 0m 0sec
+        [info] Solution Data Correctly Loaded.
+-- Message Window --
+ 
+Ansys Electronics Desktop Version 2025.1.0, Build: 2024-11-30 15:03:33
+Location: C:\Program Files\ANSYS Inc\v251\AnsysEM\ansysedt.exe
+Non Graphical Mode: No Project??
+Starting Batch Run: 9:55:04 AM  Oct 02, 2025
+Running as user : ANSYS\mlin
+Temp directory: C:\Users\mlin\AppData\Local\Temp
+Project directory: D:\OneDrive - ANSYS, Inc\Documents\Ansoft
+-- Message Window --
+      *Global - Messages
+        [info] GRPC server running on port: 59404. 
+        [info] OpenGL Version: 4.6.0 - Build 32.0.101.6881
+        [info] EDB folder tmp/pcb.aedb has been imported to project pcb
+        [info] Active Design set to 0;Cell_YLQACW
+        [info] Active Design set to 0;Cell_YLQACW
+        [info] Aedt Objects correctly read
+        [info] Project pcb Saved correctly
+        [info] Solving all design setups. Analysis started...
+        [info] Design setup None solved correctly in 0.0h 0.0m 29.0s
+        [info] Parsing D:\OneDrive - ANSYS, Inc\a-client-repositories\quanta-stackup-characterization-202510\stackup characterization\tmp\pcb.aedt.
+        [info] File D:\OneDrive - ANSYS, Inc\a-client-repositories\quanta-stackup-characterization-202510\stackup characterization\tmp\pcb.aedt correctly loaded. Elapsed time: 0m 0sec
+        [info] aedt file load time 0.043556928634643555
+        [info] PostProcessor class has been initialized! Elapsed time: 0m 0sec
+        [info] Post class has been initialized! Elapsed time: 0m 0sec
+        [info] Loading Modeler.
+        [info] Modeler loaded.
+        [info] EDB loaded.
+        [info] Layers loaded.
+        [info] Primitives loaded.
+        [info] Modeler class has been initialized! Elapsed time: 0m 0sec
+        [info] Solution Data Correctly Loaded.
+-- Message Window --
+Stopping Batch Run: 9:55:55 AM  Oct 02, 2025
