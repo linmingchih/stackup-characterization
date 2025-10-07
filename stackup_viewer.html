@@ -142,7 +142,7 @@ th.tolerance-col, td.tolerance-col {
       <tr>
         <th class="col-layername">Layer Name</th>
         <th class="col-reference_layers">Reference Layers</th>
-        <th class="col-pitch">Pitch (mil)</th>
+        <th class="col-spacing">Spacing (mil)</th>
         <th class="col-width">Width (mil)</th>
         <th class="variation-col col-etchfactor">
           <span class="header-title">EtchFactor</span>
@@ -223,7 +223,7 @@ th.tolerance-col, td.tolerance-col {
       const tableBody = document.getElementById('tableBody');
       const messageEl = document.getElementById('message');
       const frequencyInput = document.getElementById('frequencyInput');
-      const columns = ['layername', 'reference_layers', 'pitch', 'width', 'etchfactor', 'thickness', 'dk', 'impedance_target', 'df', 'hallhuray_surface_ratio', 'nodule_radius', 'loss_target'];
+      const columns = ['layername', 'reference_layers', 'spacing', 'width', 'etchfactor', 'thickness', 'dk', 'impedance_target', 'df', 'hallhuray_surface_ratio', 'nodule_radius', 'loss_target'];
       const columnClassNames = {
         etchfactor: 'variation-col',
         thickness: 'variation-col',
@@ -353,7 +353,7 @@ th.tolerance-col, td.tolerance-col {
           rows.push({
             layername: layerName,
             reference_layers: referenceLayers,
-            pitch: '',
+            spacing: '',
             width: '',
             etchfactor: etchFactor,
             thickness: thickness,
