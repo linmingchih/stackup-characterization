@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<c:Control xmlns:c="http://www.ansys.com/control" schemaVersion="1.0">
+
+  <Stackup schemaVersion="1.0">
+    <Materials>
+      <Material Name="FR3.5_0.028">
+        <Permittivity>
+          <Double>3.5</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.028</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR3.64_0.015">
+        <Permittivity>
+          <Double>3.64</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.015</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR3.92_0.013">
+        <Permittivity>
+          <Double>3.92</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.013</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="FR3.9_0.013">
+        <Permittivity>
+          <Double>3.9</Double>
+        </Permittivity>
+        <DielectricLossTangent>
+          <Double>0.013</Double>
+        </DielectricLossTangent>
+      </Material>
+      <Material Name="ODB_COND_in3">
+        <Conductivity>
+          <Double>59880239.5209581</Double>
+        </Conductivity>
+      </Material>
+      <Material Name="ODB_COND_top">
+        <Conductivity>
+          <Double>58004640.3712297</Double>
+        </Conductivity>
+      </Material>
+    </Materials>
+    <Layers LengthUnit="mil">
+      <Layer Color="#44614c" Material="FR3.5_0.028" Name="smt" Thickness="0.8661417319999999" Type="dielectric"/>
+      <Layer Color="#5c4300" EtchFactor="-2.500000000000001" FillMaterial="FR3.5_0.028" Material="ODB_COND_top" Name="top" Thickness="1.9" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#1a291f" Material="FR3.64_0.015" Name="dielectric1" Thickness="3.47007874" Type="dielectric"/>
+      <Layer Color="#8db7ca" EtchFactor="-2.500000000000001" FillMaterial="FR3.64_0.015" Material="ODB_COND_top" Name="gnd1" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#264a33" Material="FR3.9_0.013" Name="dielectric2" Thickness="4" Type="dielectric"/>
+      <Layer Color="#fd777a" EtchFactor="-2.500000000000001" FillMaterial="FR3.9_0.013" Material="ODB_COND_top" Name="in1" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#44614c" Material="FR3.92_0.013" Name="dielectric3" Thickness="4.62007874" Type="dielectric"/>
+      <Layer Color="#f67fc1" EtchFactor="-2.500000000000001" FillMaterial="FR3.92_0.013" Material="ODB_COND_top" Name="gnd2" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#1a291f" Material="FR3.9_0.013" Name="dielectric_01" Thickness="4" Type="dielectric"/>
+      <Layer Color="#efa15d" EtchFactor="-2.500000000000001" FillMaterial="FR3.9_0.013" Material="ODB_COND_top" Name="in2" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#264a33" Material="FR3.92_0.013" Name="dielectric_02" Thickness="14.50984252" Type="dielectric"/>
+      <Layer Color="#868feb" EtchFactor="-2.500000000000001" FillMaterial="FR3.92_0.013" Material="ODB_COND_in3" Name="in3" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#44614c" Material="FR3.9_0.013" Name="dielectric5" Thickness="4" Type="dielectric"/>
+      <Layer Color="#289889" EtchFactor="-2.500000000000001" FillMaterial="FR3.9_0.013" Material="ODB_COND_in3" Name="gnd3" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#1a291f" Material="FR3.92_0.013" Name="dielectric9" Thickness="4.62007874" Type="dielectric"/>
+      <Layer Color="#553755" EtchFactor="-2.500000000000001" FillMaterial="FR3.92_0.013" Material="ODB_COND_top" Name="in4" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#264a33" Material="FR3.9_0.013" Name="dielectric10" Thickness="4" Type="dielectric"/>
+      <Layer Color="#d198b1" EtchFactor="-2.500000000000001" FillMaterial="FR3.9_0.013" Material="ODB_COND_top" Name="gnd4" Thickness="1.3" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#44614c" Material="FR3.64_0.015" Name="dielectric11" Thickness="3.47007874" Type="dielectric"/>
+      <Layer Color="#09517b" EtchFactor="-2.500000000000001" FillMaterial="FR3.64_0.015" Material="ODB_COND_top" Name="bot" Thickness="1.9" Type="conductor">
+        <HuraySurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HurayBottomSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+        <HuraySideSurfaceRoughness HallHuraySurfaceRatio="2.9" NoduleRadius="0.5um"/>
+      </Layer>
+      <Layer Color="#1a291f" Material="FR3.5_0.028" Name="smb" Thickness="0.8661417319999999" Type="dielectric"/>
+      <Layer Color="#7073af" Name="comp_+_top" Type="assembly"/>
+      <Layer Color="#6db148" Name="sst" Type="silkscreen"/>
+      <Layer Color="#d5503d" Name="spt" Type="solderpaste"/>
+      <Layer Color="#529999" Name="spb" Type="solderpaste"/>
+      <Layer Color="#bb5484" Name="ssb" Type="silkscreen"/>
+      <Layer Color="#5c4300" Name="Outline" Type="outline"/>
+      <Layer Color="#c28e39" Name="comp_+_bot" Type="assembly"/>
+    </Layers>
+  </Stackup>
+
+</c:Control>

@@ -141,6 +141,7 @@ th.tolerance-col, td.tolerance-col {
     <thead>
       <tr>
         <th class="col-layername">Layer Name</th>
+        <th class="col-type">Type</th>
         <th class="col-reference_layers">Reference Layers</th>
         <th class="col-spacing">Spacing (mil)</th>
         <th class="col-width">Width (mil)</th>
@@ -223,7 +224,7 @@ th.tolerance-col, td.tolerance-col {
       const tableBody = document.getElementById('tableBody');
       const messageEl = document.getElementById('message');
       const frequencyInput = document.getElementById('frequencyInput');
-      const columns = ['layername', 'reference_layers', 'spacing', 'width', 'etchfactor', 'thickness', 'dk', 'impedance_target', 'df', 'hallhuray_surface_ratio', 'nodule_radius', 'loss_target'];
+      const columns = ['layername', 'type', 'reference_layers', 'spacing', 'width', 'etchfactor', 'thickness', 'dk', 'impedance_target', 'df', 'hallhuray_surface_ratio', 'nodule_radius', 'loss_target'];
       const columnClassNames = {
         etchfactor: 'variation-col',
         thickness: 'variation-col',
@@ -304,7 +305,7 @@ th.tolerance-col, td.tolerance-col {
           settings: columnSettings,
           rows: tableData
         };
-        const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+        const blob = new Blob(['\uFEFF' + JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -352,6 +353,7 @@ th.tolerance-col, td.tolerance-col {
 
           rows.push({
             layername: layerName,
+            type: type,
             reference_layers: referenceLayers,
             spacing: '',
             width: '',

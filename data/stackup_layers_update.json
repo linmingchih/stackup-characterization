@@ -1,0 +1,325 @@
+{
+  "frequency": 5,
+  "settings": {
+    "etchfactor": {
+      "variation": "20%"
+    },
+    "thickness": {
+      "variation": "20%"
+    },
+    "dk": {
+      "variation": "20%"
+    },
+    "df": {
+      "variation": "20%"
+    },
+    "hallhuray_surface_ratio": {
+      "variation": "50%"
+    },
+    "nodule_radius": {
+      "variation": "50%"
+    },
+    "impedance_target": {
+      "tolerance": "1%"
+    },
+    "loss_target": {
+      "tolerance": "1%"
+    }
+  },
+  "rows": [
+    {
+      "layername": "smt",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "0.8661417319999999",
+      "dk": "3.5",
+      "impedance_target": "",
+      "df": "0.028",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "top",
+      "reference_layers": "None / gnd1",
+      "spacing": "4.6",
+      "width": "7.4",
+      "etchfactor": "-2.5",
+      "thickness": "1.9",
+      "dk": "",
+      "impedance_target": 100,
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": "0.856"
+    },
+    {
+      "layername": "dielectric1",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "3.47007874",
+      "dk": "3.64",
+      "impedance_target": "",
+      "df": "0.015",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "gnd1",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": "",
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": ""
+    },
+    {
+      "layername": "dielectric2",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "4",
+      "dk": "3.9",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "in1",
+      "reference_layers": "gnd1 / gnd2",
+      "spacing": "4.6",
+      "width": "7.4",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": 100,
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": "0.914"
+    },
+    {
+      "layername": "dielectric3",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "4.62007874",
+      "dk": "3.92",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "gnd2",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": "",
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": ""
+    },
+    {
+      "layername": "dielectric_01",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "4",
+      "dk": "3.9",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "in2",
+      "reference_layers": "gnd2 / in3",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": 100,
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": "0"
+    },
+    {
+      "layername": "dielectric_02",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "14.50984252",
+      "dk": "3.92",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "in3",
+      "reference_layers": "in2 / gnd3",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": 100,
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": 0
+    },
+    {
+      "layername": "dielectric5",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "4",
+      "dk": "3.9",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "gnd3",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": "",
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": ""
+    },
+    {
+      "layername": "dielectric9",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "4.62007874",
+      "dk": "3.92",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "in4",
+      "reference_layers": "gnd3 / gnd4",
+      "spacing": "4.6",
+      "width": "7.4",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": 100,
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": "0.914"
+    },
+    {
+      "layername": "dielectric10",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "4",
+      "dk": "3.9",
+      "impedance_target": "",
+      "df": "0.013",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "gnd4",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "-2.5",
+      "thickness": "1.3",
+      "dk": "",
+      "impedance_target": "",
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": ""
+    },
+    {
+      "layername": "dielectric11",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "3.47007874",
+      "dk": "3.64",
+      "impedance_target": "",
+      "df": "0.015",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    },
+    {
+      "layername": "bot",
+      "reference_layers": "gnd4 / None",
+      "spacing": "4.6",
+      "width": "7.4",
+      "etchfactor": "-2.5",
+      "thickness": "1.9",
+      "dk": "",
+      "impedance_target": 100,
+      "df": "",
+      "hallhuray_surface_ratio": "2.9",
+      "nodule_radius": "0.5",
+      "loss_target": "0.856"
+    },
+    {
+      "layername": "smb",
+      "reference_layers": "",
+      "spacing": "",
+      "width": "",
+      "etchfactor": "",
+      "thickness": "0.8661417319999999",
+      "dk": "3.5",
+      "impedance_target": "",
+      "df": "0.028",
+      "hallhuray_surface_ratio": "",
+      "nodule_radius": "",
+      "loss_target": ""
+    }
+  ]
+}
