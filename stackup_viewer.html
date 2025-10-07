@@ -1,0 +1,562 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stackup Table Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      color: #1f2933;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    input[type="file"] {
+      font-size: 0.95rem;
+    }
+    .frequency-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      padding: 4px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background-color: #f8fafc;
+    }
+    .frequency-control input {
+      width: 80px;
+      padding: 2px 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    button {
+      padding: 6px 16px;
+      font-size: 0.95rem;
+      border: 1px solid #2d72d9;
+      background-color: #2d72d9;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button[disabled] {
+      background-color: #94a3b8;
+      border-color: #94a3b8;
+      cursor: not-allowed;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 100%;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+th {
+  background-color: #e2e8f0;
+  font-weight: 600;
+}
+th[class*="col-"], td[class*="col-"] {
+  width: 1%;
+  white-space: nowrap;
+}
+td.col-reference_layers {
+  white-space: normal;
+}
+td.col-layername {
+  white-space: normal;
+}
+th.variation-col, td.variation-col {
+  background-color: #ecfdf3;
+}
+th.tolerance-col, td.tolerance-col {
+  background-color: #fffbea;
+}
+    th .header-title {
+      display: block;
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+    th .header-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 400;
+      font-size: 0.75rem;
+      color: #475569;
+      background-color: transparent;
+    }
+    th .header-control span {
+      white-space: nowrap;
+    }
+    th .header-control input {
+      width: 30px;
+      padding: 2px 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      appearance: textfield;
+    }
+    th .header-control input::-webkit-outer-spin-button,
+    th .header-control input::-webkit-inner-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    #message {
+      color: #b91c1c;
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stackup Table</h1>
+  <div class="controls">
+    <input type="file" id="fileInput" accept=".xml">
+    <label class="frequency-control" for="frequencyInput">
+      <span>Frequency</span>
+      <input type="number" id="frequencyInput" min="0" step="0.1" value="5">
+      <span>GHz</span>
+    </label>
+    <button id="downloadBtn" disabled>Download JSON</button>
+  </div>
+  <div id="message"></div>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-layername">Layer Name</th>
+        <th class="col-reference_layers">Reference Layers</th>
+        <th class="col-pitch">Pitch (mil)</th>
+        <th class="col-width">Width (mil)</th>
+        <th class="variation-col col-etchfactor">
+          <span class="header-title">EtchFactor</span>
+          <label class="header-control" for="etchFactorVariationInput">
+            <span>Variation</span>
+            <input type="number" id="etchFactorVariationInput" min="0" step="0.1" value="20">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="variation-col col-thickness">
+          <span class="header-title">Thickness (mil)</span>
+          <label class="header-control" for="thicknessVariationInput">
+            <span>Variation</span>
+            <input type="number" id="thicknessVariationInput" min="0" step="0.1" value="20">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="variation-col col-dk">
+          <span class="header-title">Dk</span>
+          <label class="header-control" for="dkVariationInput">
+            <span>Variation</span>
+            <input type="number" id="dkVariationInput" min="0" step="0.1" value="20">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="tolerance-col col-impedance_target">
+          <span class="header-title">Target Impedance</span>
+          <label class="header-control" for="impedanceToleranceInput">
+            <span>Tolerance</span>
+            <input type="number" id="impedanceToleranceInput" min="0" step="0.1" value="1">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="variation-col col-df">
+          <span class="header-title">Df</span>
+          <label class="header-control" for="dfVariationInput">
+            <span>Variation</span>
+            <input type="number" id="dfVariationInput" min="0" step="0.1" value="20">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="variation-col col-hallhuray_surface_ratio">
+          <span class="header-title">HallHuray Surface Ratio</span>
+          <label class="header-control" for="hallHurayVariationInput">
+            <span>Variation</span>
+            <input type="number" id="hallHurayVariationInput" min="0" step="0.1" value="50">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="variation-col col-nodule_radius">
+          <span class="header-title">Nodule Radius (um)</span>
+          <label class="header-control" for="noduleVariationInput">
+            <span>Variation</span>
+            <input type="number" id="noduleVariationInput" min="0" step="0.1" value="50">
+            <span>%</span>
+          </label>
+        </th>
+        <th class="tolerance-col col-loss_target">
+          <span class="header-title">Target Loss/Inch</span>
+          <label class="header-control" for="lossToleranceInput">
+            <span>Tolerance</span>
+            <input type="number" id="lossToleranceInput" min="0" step="0.1" value="1">
+            <span>%</span>
+          </label>
+        </th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr>
+        <td colspan="12">Upload a stackup XML file to view layers.</td>
+      </tr>
+    </tbody>
+  </table>
+  <script>
+    (function () {
+      const fileInput = document.getElementById('fileInput');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const tableBody = document.getElementById('tableBody');
+      const messageEl = document.getElementById('message');
+      const frequencyInput = document.getElementById('frequencyInput');
+      const columns = ['layername', 'reference_layers', 'pitch', 'width', 'etchfactor', 'thickness', 'dk', 'impedance_target', 'df', 'hallhuray_surface_ratio', 'nodule_radius', 'loss_target'];
+      const columnClassNames = {
+        etchfactor: 'variation-col',
+        thickness: 'variation-col',
+        dk: 'variation-col',
+        df: 'variation-col',
+        hallhuray_surface_ratio: 'variation-col',
+        nodule_radius: 'variation-col',
+        impedance_target: 'tolerance-col',
+        loss_target: 'tolerance-col'
+      };
+      let tableData = [];
+      const headerControlConfigs = [
+        { id: 'etchFactorVariationInput', columnKey: 'etchfactor', settingKey: 'variation', defaultValue: 20 },
+        { id: 'thicknessVariationInput', columnKey: 'thickness', settingKey: 'variation', defaultValue: 20 },
+        { id: 'dkVariationInput', columnKey: 'dk', settingKey: 'variation', defaultValue: 20 },
+        { id: 'dfVariationInput', columnKey: 'df', settingKey: 'variation', defaultValue: 20 },
+        { id: 'hallHurayVariationInput', columnKey: 'hallhuray_surface_ratio', settingKey: 'variation', defaultValue: 50 },
+        { id: 'noduleVariationInput', columnKey: 'nodule_radius', settingKey: 'variation', defaultValue: 50 },
+        { id: 'impedanceToleranceInput', columnKey: 'impedance_target', settingKey: 'tolerance', defaultValue: 1 },
+        { id: 'lossToleranceInput', columnKey: 'loss_target', settingKey: 'tolerance', defaultValue: 1 }
+      ];
+      const columnSettings = headerControlConfigs.reduce((acc, config) => {
+        acc[config.columnKey] = acc[config.columnKey] || {};
+        acc[config.columnKey][config.settingKey] = toPercentString(config.defaultValue);
+        return acc;
+      }, {});
+
+      headerControlConfigs.forEach((config) => {
+        const inputEl = document.getElementById(config.id);
+        if (!inputEl) {
+          return;
+        }
+        inputEl.value = config.defaultValue;
+        inputEl.addEventListener('input', () => handleHeaderInputChange(inputEl, config));
+        inputEl.addEventListener('blur', () => restoreDefaultIfEmpty(inputEl, config));
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (!fileInput.files.length) {
+          return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(reader.result, 'application/xml');
+            const parserError = xmlDoc.querySelector('parsererror');
+            if (parserError) {
+              throw new Error('File is not valid XML.');
+            }
+            tableData = buildTableData(xmlDoc);
+            renderTable(tableData);
+            messageEl.textContent = '';
+            downloadBtn.disabled = tableData.length === 0;
+          } catch (error) {
+            tableData = [];
+            renderTable(tableData);
+            messageEl.textContent = error.message;
+            downloadBtn.disabled = true;
+          }
+        };
+
+        reader.onerror = () => {
+          tableData = [];
+          renderTable(tableData);
+          messageEl.textContent = 'Failed to read file.';
+          downloadBtn.disabled = true;
+        };
+
+        reader.readAsText(file);
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        const exportPayload = {
+          frequency: getFrequencyValue(),
+          settings: columnSettings,
+          rows: tableData
+        };
+        const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'stackup_layers.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+
+      function buildTableData(xmlDoc) {
+        const materialNodes = Array.from(xmlDoc.querySelectorAll('Materials > Material'));
+        const materials = new Map();
+
+        materialNodes.forEach((node) => {
+          const name = node.getAttribute('Name') || '';
+          const permNode = node.querySelector('Permittivity > Double');
+          const lossNode = node.querySelector('DielectricLossTangent > Double');
+          materials.set(name, {
+            dk: permNode ? permNode.textContent.trim() : '',
+            df: lossNode ? lossNode.textContent.trim() : ''
+          });
+        });
+
+        const layers = Array.from(xmlDoc.querySelectorAll('Layers > Layer'));
+        const rows = [];
+        layers.forEach((layer, index) => {
+          const layerName = layer.getAttribute('Name') || '';
+          const type = (layer.getAttribute('Type') || '').toLowerCase();
+          const materialName = layer.getAttribute('Material') || '';
+          const fillMaterialName = layer.getAttribute('FillMaterial') || '';
+          const thickness = layer.getAttribute('Thickness') || '';
+          const materialData = materials.get(materialName) || materials.get(fillMaterialName) || { dk: '', df: '' };
+          const hurayNode = layer.querySelector('HuraySurfaceRoughness') || layer.querySelector('HurayBottomSurfaceRoughness') || layer.querySelector('HuraySideSurfaceRoughness');
+          const hallHurayRatio = hurayNode ? (hurayNode.getAttribute('HallHuraySurfaceRatio') || '').trim() : '';
+          const noduleRadiusRaw = hurayNode ? (hurayNode.getAttribute('NoduleRadius') || '').trim() : '';
+          const noduleRadius = noduleRadiusRaw.replace(/\s*um$/i, '');
+          const etchFactorRaw = layer.getAttribute('EtchFactor') || '';
+          const etchFactor = formatNumber(etchFactorRaw, 3);
+          const isSignal = type === 'conductor' && !/gnd|ground|vcc|pwr|power/i.test(layerName);
+          if (type !== 'conductor' && type !== 'dielectric') {
+            return;
+          }
+          const referenceLayers = isSignal ? buildReferenceLabel(layers, index) : '';
+
+          rows.push({
+            layername: layerName,
+            reference_layers: referenceLayers,
+            pitch: '',
+            width: '',
+            etchfactor: etchFactor,
+            thickness: thickness,
+            dk: materialData.dk,
+            impedance_target: isSignal ? 100 : '',
+            df: materialData.df,
+            hallhuray_surface_ratio: hallHurayRatio,
+            nodule_radius: noduleRadius,
+            loss_target: isSignal ? 0 : ''
+          });
+        });
+        return rows;
+      }
+
+      function buildReferenceLabel(layers, index) {
+        const above = findNearestConductorName(layers, index, -1) || 'None';
+        const below = findNearestConductorName(layers, index, 1) || 'None';
+        return above + ' / ' + below;
+      }
+
+      function findNearestConductorName(layers, startIndex, step) {
+        let cursor = startIndex + step;
+        while (cursor >= 0 && cursor < layers.length) {
+          const candidate = layers[cursor];
+          const type = (candidate.getAttribute('Type') || '').toLowerCase();
+          if (type === 'conductor') {
+            const name = candidate.getAttribute('Name') || '';
+            if (name.trim()) {
+              return name.trim();
+            }
+          }
+          cursor += step;
+        }
+        return '';
+      }
+
+      function renderTable(rows) {
+        tableBody.innerHTML = '';
+        if (!rows.length) {
+          const emptyRow = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = columns.length;
+          cell.textContent = 'Upload a stackup XML file to view layers.';
+          emptyRow.appendChild(cell);
+          tableBody.appendChild(emptyRow);
+          return;
+        }
+
+        rows.forEach((row, rowIndex) => {
+          const tr = document.createElement('tr');
+          columns.forEach((column) => {
+            const td = document.createElement('td');
+            const value = row[column];
+            const columnClass = columnClassNames[column];
+            if (columnClass) {
+              td.classList.add(columnClass);
+            }
+            td.classList.add('col-' + column);
+            td.textContent = value === undefined || value === null ? '' : value;
+
+            if (column !== 'layername') {
+              td.contentEditable = 'true';
+              td.dataset.rowIndex = String(rowIndex);
+              td.dataset.columnKey = column;
+              td.addEventListener('input', handleCellInput);
+              td.addEventListener('blur', handleCellBlur);
+              td.addEventListener('keydown', handleCellKeydown);
+              td.addEventListener('paste', handleCellPaste);
+            }
+
+            tr.appendChild(td);
+          });
+          tableBody.appendChild(tr);
+        });
+      }
+
+      function handleCellInput(event) {
+        const cell = event.currentTarget;
+        const rowIndex = Number(cell.dataset.rowIndex);
+        const column = cell.dataset.columnKey;
+        if (Number.isNaN(rowIndex) || !column) {
+          return;
+        }
+        tableData[rowIndex][column] = cell.textContent;
+      }
+
+      function handleCellBlur(event) {
+        const cell = event.currentTarget;
+        cell.textContent = cell.textContent.trim();
+        handleCellInput(event);
+      }
+
+      function handleCellKeydown(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }
+
+      function handleCellPaste(event) {
+        event.preventDefault();
+        const clipboardData = event.clipboardData;
+        if (!clipboardData) {
+          return;
+        }
+        const text = clipboardData.getData('text/plain');
+        if (!text) {
+          return;
+        }
+        const cell = event.currentTarget;
+        const startRow = Number(cell.dataset.rowIndex);
+        const startColumnKey = cell.dataset.columnKey;
+        const startColumnIndex = columns.indexOf(startColumnKey);
+        if (Number.isNaN(startRow) || startColumnIndex === -1) {
+          return;
+        }
+
+        const normalizedText = text.replace(/\r\n/g, '\n');
+        const clipboardRows = normalizedText.split('\n');
+        if (clipboardRows.length && clipboardRows[clipboardRows.length - 1] === '') {
+          clipboardRows.pop();
+        }
+
+        clipboardRows.forEach((rowText, rowOffset) => {
+          const targetRowIndex = startRow + rowOffset;
+          if (targetRowIndex >= tableData.length) {
+            return;
+          }
+          const clipboardCells = rowText.split('\t');
+          clipboardCells.forEach((cellText, cellOffset) => {
+            const targetColumnIndex = startColumnIndex + cellOffset;
+            if (targetColumnIndex >= columns.length) {
+              return;
+            }
+            const targetColumnKey = columns[targetColumnIndex];
+            if (targetColumnKey === 'layername') {
+              return;
+            }
+            tableData[targetRowIndex][targetColumnKey] = cellText;
+          });
+        });
+
+        renderTable(tableData);
+      }
+
+      function handleHeaderInputChange(inputEl, config, enforceBounds = false) {
+        const numericValue = parseFloat(inputEl.value);
+        if (!Number.isFinite(numericValue)) {
+          if (enforceBounds) {
+            inputEl.value = config.defaultValue;
+            columnSettings[config.columnKey][config.settingKey] = toPercentString(config.defaultValue);
+          }
+          return;
+        }
+        const sanitized = Math.max(numericValue, 0);
+        if (enforceBounds && sanitized !== numericValue) {
+          inputEl.value = sanitized;
+        }
+        columnSettings[config.columnKey][config.settingKey] = toPercentString(sanitized);
+      }
+
+      function restoreDefaultIfEmpty(inputEl, config) {
+        if (inputEl.value === '') {
+          inputEl.value = config.defaultValue;
+        }
+        handleHeaderInputChange(inputEl, config, true);
+      }
+
+      function toPercentString(value) {
+        const numberValue = Number(value);
+        if (!Number.isFinite(numberValue)) {
+          return '';
+        }
+        return numberValue + '%';
+      }
+
+      function formatNumber(value, fractionDigits) {
+        if (value === undefined || value === null) {
+          return '';
+        }
+        const trimmed = String(value).trim();
+        if (trimmed === '') {
+          return '';
+        }
+        const numericValue = Number(trimmed);
+        if (!Number.isFinite(numericValue)) {
+          return trimmed;
+        }
+        const fixed = numericValue.toFixed(fractionDigits);
+        return fixed.replace(/\.0+$/, '').replace(/\.(\d*?)0+$/, '.$1');
+      }
+
+      function getFrequencyValue() {
+        if (!frequencyInput) {
+          return 5;
+        }
+        const parsed = parseFloat(frequencyInput.value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          return 5;
+        }
+        return parsed;
+      }
+    })();
+  </script>
+</body>
+</html>
