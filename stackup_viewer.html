@@ -473,32 +473,36 @@ th.tolerance-col, td.tolerance-col {
           return;
         }
 
-        const normalizedText = text.replace(/\r\n/g, '\n');
-        const clipboardRows = normalizedText.split('\n');
-        if (clipboardRows.length && clipboardRows[clipboardRows.length - 1] === '') {
-          clipboardRows.pop();
-        }
+        cell.contentEditable = 'false';
 
-        clipboardRows.forEach((rowText, rowOffset) => {
-          const targetRowIndex = startRow + rowOffset;
-          if (targetRowIndex >= tableData.length) {
-            return;
+        setTimeout(() => {
+          const normalizedText = text.replace(/\r\n/g, '\n');
+          const clipboardRows = normalizedText.split('\n');
+          if (clipboardRows.length && clipboardRows[clipboardRows.length - 1] === '') {
+            clipboardRows.pop();
           }
-          const clipboardCells = rowText.split('\t');
-          clipboardCells.forEach((cellText, cellOffset) => {
-            const targetColumnIndex = startColumnIndex + cellOffset;
-            if (targetColumnIndex >= columns.length) {
-              return;
-            }
-            const targetColumnKey = columns[targetColumnIndex];
-            if (targetColumnKey === 'layername') {
-              return;
-            }
-            tableData[targetRowIndex][targetColumnKey] = cellText;
-          });
-        });
 
-        renderTable(tableData);
+          clipboardRows.forEach((rowText, rowOffset) => {
+            const targetRowIndex = startRow + rowOffset;
+            if (targetRowIndex >= tableData.length) {
+              return;
+            }
+            const clipboardCells = rowText.split('\t');
+            clipboardCells.forEach((cellText, cellOffset) => {
+              const targetColumnIndex = startColumnIndex + cellOffset;
+              if (targetColumnIndex >= columns.length) {
+                return;
+              }
+              const targetColumnKey = columns[targetColumnIndex];
+              if (targetColumnKey === 'layername') {
+                return;
+              }
+              tableData[targetRowIndex][targetColumnKey] = cellText;
+            });
+          });
+
+          renderTable(tableData);
+        }, 0);
       }
 
       function handleHeaderInputChange(inputEl, config, enforceBounds = false) {
