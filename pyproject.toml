@@ -1,0 +1,10 @@
+[project]
+name = "stackup-characterization"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyaedt>=0.22.2",
+    "pywebview>=6.1",
+]

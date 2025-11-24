@@ -1,21 +1,6 @@
-import subprocess
-import sys
-import time
-import json
+def main():
+    print("Hello from stackup-characterization!")
 
 
-subprocess.run(
-    [sys.executable, "model.py"],  # 傳入參數
-    capture_output=True, 
-    text=True
-)
-
-result = subprocess.run(
-    [sys.executable, "simulate.py"],  # 傳入參數
-    capture_output=True, 
-    text=True
-)
-
-with open('tmp/result.json') as f:
-    loss = json.load(f)
-    print(loss)
+if __name__ == "__main__":
+    main()
