@@ -1,4 +1,4 @@
-{
+﻿{
   "frequency": 5,
   "settings": {
     "etchfactor": {
@@ -29,6 +29,7 @@
   "rows": [
     {
       "layername": "smt",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -43,9 +44,10 @@
     },
     {
       "layername": "top",
+      "type": "conductor",
       "reference_layers": "None / gnd1",
-      "spacing": "4.6",
-      "width": "7.4",
+      "spacing": "10.75",
+      "width": "5.16",
       "etchfactor": "-2.5",
       "thickness": "1.9",
       "dk": "",
@@ -53,10 +55,11 @@
       "df": "",
       "hallhuray_surface_ratio": "2.9",
       "nodule_radius": "0.5",
-      "loss_target": "0.856"
+      "loss_target": "-0.86"
     },
     {
       "layername": "dielectric1",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -71,6 +74,7 @@
     },
     {
       "layername": "gnd1",
+      "type": "conductor",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -85,6 +89,7 @@
     },
     {
       "layername": "dielectric2",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -99,9 +104,10 @@
     },
     {
       "layername": "in1",
+      "type": "conductor",
       "reference_layers": "gnd1 / gnd2",
-      "spacing": "4.6",
-      "width": "7.4",
+      "spacing": "8.9",
+      "width": "3.11",
       "etchfactor": "-2.5",
       "thickness": "1.3",
       "dk": "",
@@ -109,10 +115,11 @@
       "df": "",
       "hallhuray_surface_ratio": "2.9",
       "nodule_radius": "0.5",
-      "loss_target": "0.914"
+      "loss_target": "-0.914"
     },
     {
       "layername": "dielectric3",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -127,6 +134,7 @@
     },
     {
       "layername": "gnd2",
+      "type": "conductor",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -141,6 +149,7 @@
     },
     {
       "layername": "dielectric_01",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -155,6 +164,7 @@
     },
     {
       "layername": "in2",
+      "type": "conductor",
       "reference_layers": "gnd2 / in3",
       "spacing": "",
       "width": "",
@@ -165,10 +175,11 @@
       "df": "",
       "hallhuray_surface_ratio": "2.9",
       "nodule_radius": "0.5",
-      "loss_target": "0"
+      "loss_target": 0
     },
     {
       "layername": "dielectric_02",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -183,6 +194,7 @@
     },
     {
       "layername": "in3",
+      "type": "conductor",
       "reference_layers": "in2 / gnd3",
       "spacing": "",
       "width": "",
@@ -197,6 +209,7 @@
     },
     {
       "layername": "dielectric5",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -211,6 +224,7 @@
     },
     {
       "layername": "gnd3",
+      "type": "conductor",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -225,6 +239,7 @@
     },
     {
       "layername": "dielectric9",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -239,9 +254,10 @@
     },
     {
       "layername": "in4",
+      "type": "conductor",
       "reference_layers": "gnd3 / gnd4",
-      "spacing": "4.6",
-      "width": "7.4",
+      "spacing": "8.9",
+      "width": "3.11",
       "etchfactor": "-2.5",
       "thickness": "1.3",
       "dk": "",
@@ -249,10 +265,11 @@
       "df": "",
       "hallhuray_surface_ratio": "2.9",
       "nodule_radius": "0.5",
-      "loss_target": "0.914"
+      "loss_target": "-0.914"
     },
     {
       "layername": "dielectric10",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -267,6 +284,7 @@
     },
     {
       "layername": "gnd4",
+      "type": "conductor",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -281,6 +299,7 @@
     },
     {
       "layername": "dielectric11",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
@@ -295,9 +314,10 @@
     },
     {
       "layername": "bot",
+      "type": "conductor",
       "reference_layers": "gnd4 / None",
-      "spacing": "4.6",
-      "width": "7.4",
+      "spacing": "10.75",
+      "width": "5.16",
       "etchfactor": "-2.5",
       "thickness": "1.9",
       "dk": "",
@@ -305,10 +325,11 @@
       "df": "",
       "hallhuray_surface_ratio": "2.9",
       "nodule_radius": "0.5",
-      "loss_target": "0.856"
+      "loss_target": "-0.86"
     },
     {
       "layername": "smb",
+      "type": "dielectric",
       "reference_layers": "",
       "spacing": "",
       "width": "",
