@@ -2,7 +2,7 @@ import sys
 from ansys.aedt.core import Hfss3dLayout 
 
 def run_simulation(edb_path):
-    hfss = Hfss3dLayout(edb_path, version='2025.2', remove_lock=True)
+    hfss = Hfss3dLayout(edb_path, version='2025.2', non_graphical=True, remove_lock=True)
 
     hfss.set_differential_pair('port1:T1', 'port1:T2', 'comm1', 'diff1')
     hfss.set_differential_pair('port2:T1', 'port2:T2', 'comm2', 'diff2')
