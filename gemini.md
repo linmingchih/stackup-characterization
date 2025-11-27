@@ -1,13 +1,12 @@
-# Stackup Characterization Tool — Full Technical Prompt
-
+# Stackup Characterization Tool 
 ## 1. Purpose
 
-The tool automates stackup characterization in ANSYS HFSS 3D Layout using PyEDB for stackup/geometry creation, PyAEDT for HFSS simulation, and SciPy for iterative optimization. It ingests a JSON exported from `stackup_viewer.html`, adjusts parameters, generates `.aedb` projects, runs simulations, extracts Zdiff/S21, and produces characterized JSON and XML outputs.
+The tool automates stackup characterization using modeling.py for stackup/geometry creation, simulation.py for HFSS simulation, and SciPy for iterative optimization. It read a .json and adjusts parameters, generates `.aedb` projects, runs simulations, extracts Sdd11 and Sdd21, and produces characterized JSON outputs.
 
----
 
 ## 2. JSON Specification (based on uploaded file)
-
+input: stackup_layers_1007.json
+### Overview
 The JSON structure:
 
 ```json
@@ -43,6 +42,7 @@ loss_target.tolerance      = 1%
 Zdiff and dB(S21) must each fall within `target_value ± 1%`.
 
 ### 2.4 `rows[]` layer definitions
+the `rows` array defines each layer in the stackup. the order corresponds to physical stacking (top to bottom). it will be copied to os_stackup.json, with updated parameters after characterization.
 
 Each row includes:
 
@@ -65,38 +65,14 @@ Examples from the JSON: `top` → `None / gnd1`, `in1` → `gnd1 / gnd2`, `in4` 
 
 ---
 
-## 3. MVC Architecture
-
-- **Model:** `characterization_process.py`, `modeling.py`, `simulation.py`
-- **View:** `gui.py` (pywebview)
-- **Controller:** `main.py`
-
 ---
 
-## 4. Script Behavior
 
-### 4.1 `main.py`
-
-- Initializes the GUI and version info.
-- Sends the input JSON path to the characterization process.
-- Receives and prints real-time messages.
-
-### 4.2 `gui.py`
-
-- Pywebview-based GUI.
-- File picker to choose the exported JSON.
-- Start button to launch characterization.
-- Information panel that streams messages from modeling and simulation subprocesses (pywebview).
-
-### 4.3 `characterization_process.py` (core logic)
+### `characterization_process.py` (core logic)
 
 **Pre-run:** Create a timestamped folder next to the JSON to hold `.aedb` and outputs, for example:
 
-```
-my_stackup/
-  stackup_layers_1007.json
-  20251124_153050/  # AEDB and outputs live here
-```
+`stackup_characterization_YYYYMMDD_HHMMSS/`
 
 **Workflow per signal layer:**
 
@@ -109,7 +85,7 @@ my_stackup/
 
 ### 4.4 Parameter adjustment priority
 
-Adjustment order (clamped by variation limits):
+Adjustment priority with scipy optimization (minimize difference from targets):
 
 1. etch_factor (±20%)
 2. conductor thickness (±20%)
@@ -129,153 +105,7 @@ Log columns:
 
 ### 4.6 Final output
 
-For all completed signal layers, save:
-
-- `stackup_layers_1007_ok.json`
-- `stackup_layers_1007_ok.csv`
-- `stackup_layers_1007_ok.xml`
-
-Final XML is regenerated via PyEDB using optimized parameters.
-
----
-
-## 5. `modeling.py` behavior
-
-- Receives JSON-derived parameters.
-- Uses PyEDB (not PyAEDT) to build the full stackup, differential pair on the target layer, dielectrics above/below, and conductor reference layers.
-- Creates differential wave ports with correct reference elevation.
-- Creates HFSS setup at `frequency` GHz and saves the `.aedb`.
-
-Note: PyEDB runs separately because PyAEDT initialization in the same process fails.
-
-Example PyEDB code snippet for `modeling.py`:
-```python
-from pyedb import Edb
-
-edb = Edb(version='2024.1')
-
-edb.materials.add_dielectric_material(name='up_epoxy', 
-                                      permittivity=4, 
-                                      dielectric_loss_tangent=0.02)
-edb.materials.add_dielectric_material(name='low_epoxy', 
-                                      permittivity=3.8, 
-                                      dielectric_loss_tangent=0.015)
-
-edb.stackup.add_layer(layer_name='top',
-                      method="add_on_bottom",
-                      layer_type='signal',
-                      material='copper',
-                      thickness='35um')
-
-edb.stackup.add_layer(layer_name='up_dielectric', 
-                      method="add_on_bottom",
-                      layer_type='dielectric',
-                      material='up_epoxy',
-                      thickness='100um')
-
-layer= edb.stackup.add_layer(layer_name='signal', 
-                             method="add_on_bottom",
-                             layer_type='signal',
-                             material='copper',
-                             fillMaterial='FR4_epoxy',
-                             thickness='35um',
-                             etch_factor=1,
-                             enable_roughness=True)
-nodule_radius = '2um'
-surface_ratio = 0.2
-
-layer.top_hallhuray_nodule_radius = nodule_radius
-layer.top_hallhuray_surface_ratio = surface_ratio
-layer.bottom_hallhuray_nodule_radius = nodule_radius
-layer.bottom_hallhuray_surface_ratio = surface_ratio
-layer.side_hallhuray_nodule_radius = nodule_radius
-layer.side_hallhuray_surface_ratio = surface_ratio
-
-edb.stackup.add_layer(layer_name='low_dielectric', 
-                      method="add_on_bottom",
-                      layer_type='dielectric',
-                      material='low_epoxy',)
-
-edb.stackup.add_layer(layer_name='bottom',
-                      method="add_on_bottom",
-                      layer_type='signal', 
-                      material='copper',
-                      thickness='35um')
-
-spacing_mil = 40 
-width_mil = 30
-line_p = edb.modeler.create_trace([('0mil', f'{(spacing_mil+width_mil)/2}mil'), ('1000mil', f'{(spacing_mil+width_mil)/2}mil')], 
-                                  width=f'{width_mil}mil',
-                                  layer_name='signal',
-                                  start_cap_style='Flat',
-                                  end_cap_style='Flat')
-line_n = edb.modeler.create_trace([('0mil', f'{-(spacing_mil+width_mil)/2}mil'), ('1000mil', f'{-(spacing_mil+width_mil)/2}mil')],
-                                  width=f'{width_mil}mil',
-                                  layer_name='signal',
-                                  start_cap_style='Flat',
-                                  end_cap_style='Flat')
-
-plane_top = edb.modeler.create_rectangle(layer_name='top', 
-                                         net_name='GND',
-                                         lower_left_point=('0mil', '-50mil'),
-                                         upper_right_point=('100mil', '50mil'))
+Update the original JSON with characterized parameters for each signal layer and save as `characterized_stackup.json` in the output folder. 
 
 
-plane_bot = edb.modeler.create_rectangle(layer_name='bottom', 
-                                         net_name='GND',
-                                         lower_left_point=('0mil', '-50mil'),
-                                         upper_right_point=('100mil', '50mil'))
 
-edb.hfss.create_differential_wave_port(line_p, line_p.center_line[0], line_n, line_n.center_line[0])
-edb.hfss.create_differential_wave_port(line_p, line_p.center_line[-1], line_n, line_n.center_line[-1])
-
-setup = edb.create_hfss_setup()
-setup.set_solution_single_frequency(frequency='5GHz', 
-                                    max_num_passes=20, 
-                                    max_delta_s=0.01)
-
-edb.save_edb_as('d:/demo/test.aedb') 
-edb.close_edb()
-```
-
-
----
-
-## 6. `simulation.py` behavior
-
-- Opens `.aedb` using PyAEDT.
-- Runs HFSS simulation.
-- Extracts Sdiff(1, 1) and Sdiff(2, 1) (dB).
-- Sdiff(2, 1) (dB) is the differential insertion loss (S21).
-- Computes Zdiff from Sdiff(1,1). Zdiff = 100 * (1 + S11)/(1 - S11).
-- Compares Zdiff and S21 against targets.
-- Returns results to `characterization_process.py` via stdout or temp JSON.
-
-Example PyAEDT code snippet for `simulation.py`:
-```python
-from pyaedt import Hfss3dLayout 
-
-hfss = Hfss3dLayout('d:/demo/test.aedb', version='2025.2', remove_lock=True)
-
-
-hfss.set_differential_pair('port1:T1', 'port1:T2', 'comm1', 'diff1')
-hfss.set_differential_pair('port2:T1', 'port2:T2', 'comm2', 'diff2')
-
-hfss.analyze(cores=4)
-data = hfss.post.get_solution_data('dB(S(diff1,diff1))', context="Differential Pairs")
-dbs11 = data.data_real()[0]
-
-
-data = hfss.post.get_solution_data('dB(S(diff2,diff1))', context="Differential Pairs")
-dbs21 = data.data_real()[0]
-
-```
-
----
-
-## 7. Special rules from the JSON
-
-- Some layers have `loss_target: 0` (for example `in2`, `in3`); still evaluate S21 with a 0 dB target.
-- Layers with empty width/spacing (for example `in2`, `in3`) are skipped for characterization.
-- Etch factor may be negative (for example `-2.5`); adjustments must handle both signs proportionally.
-- Variation percentages apply to absolute value: for `etchfactor = -2.5` and 20% variation, allowed range is `-2.5 ± 0.5`.
