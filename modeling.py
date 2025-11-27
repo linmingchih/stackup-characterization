@@ -32,7 +32,10 @@ params = {
             "layername": "gnd1",
             "type": "signal",
             "thickness": "1.2mil",
-            "material": "copper"
+            "material": "copper",
+            "etch_factor": -2.5,
+            "hallhuray_surface_ratio": 0.5,
+            "nodule_radius": "0.5um",
         }
     ]
 }
