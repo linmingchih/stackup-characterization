@@ -217,14 +217,14 @@ line_n = edb.modeler.create_trace([('0mil', f'{-(spacing_mil+width_mil)/2}mil'),
 
 plane_top = edb.modeler.create_rectangle(layer_name='top', 
                                          net_name='GND',
-                                         lower_left_point=('0mil', '-100mil'),
-                                         upper_right_point=('1000mil', '100mil'))
+                                         lower_left_point=('0mil', '-50mil'),
+                                         upper_right_point=('100mil', '50mil'))
 
 
 plane_bot = edb.modeler.create_rectangle(layer_name='bottom', 
                                          net_name='GND',
-                                         lower_left_point=('0mil', '-100mil'),
-                                         upper_right_point=('1000mil', '100mil'))
+                                         lower_left_point=('0mil', '-50mil'),
+                                         upper_right_point=('100mil', '50mil'))
 
 edb.hfss.create_differential_wave_port(line_p, line_p.center_line[0], line_n, line_n.center_line[0])
 edb.hfss.create_differential_wave_port(line_p, line_p.center_line[-1], line_n, line_n.center_line[-1])
