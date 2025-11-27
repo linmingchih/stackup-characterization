@@ -79,8 +79,8 @@ Examples from the JSON: `top` → `None / gnd1`, `in1` → `gnd1 / gnd2`, `in4` 
 1. Identify signal layers (`type == "conductor"` and both `width` and `spacing` set).
 2. Extract initial parameters: width, spacing, etchfactor, thickness, hallhuray_surface_ratio, nodule_radius; dielectric thickness/dk/df above and below.
 3. Prepare modeling parameters using the dielectric layers immediately above and below (physical ordering).
-4. Create `.aedb` via `modeling.py` (subprocess) with layer geometry, dielectric stack, reference layers, frequency, and variables.
-5. Run HFSS via `simulation.py` (subprocess); extract Zdiff and dB(S21).
+4. Create `.aedb` via `modeling.py` (subprocess.Popen is necessary to create the .aedb) with layer geometry, dielectric stack, reference layers, frequency, and variables.
+5. Run HFSS via `simulation.py` (subprocess.Popen is necessary to extract Zdiff and dB(S21)); extract Zdiff and dB(S21).
 6. Evaluate against targets (`target ± tolerance`); if out of range, adjust parameters and iterate.
 
 ### 4.4 Parameter adjustment priority
