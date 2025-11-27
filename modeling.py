@@ -115,3 +115,4 @@ setup.set_solution_single_frequency(frequency='5GHz',
 
 
 edb.save()
+edb.close_edb()
