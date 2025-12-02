@@ -30,4 +30,4 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM Run application
 echo Starting application...
-start "" uv run pythonw src\gui_app.py
+start "" ".venv\Scripts\pythonw.exe" src\gui_app.py
