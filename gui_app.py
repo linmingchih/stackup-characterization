@@ -64,11 +64,10 @@ class StackupAPI:
                 self.window.evaluate_js(f"updateStats('{layer_name}', {json.dumps(layer_stats)})")
 
         try:
-            # Determine output directory based on original file or timestamp
-            # For now, let engine decide or pass it in. 
-            # Engine usually creates a timestamped folder.
+            # Determine output directory based on original file
+            output_base_dir = os.path.dirname(original_path)
             
-            self.engine = CharacterizationEngine(json_data, max_iter, log_callback, stats_callback)
+            self.engine = CharacterizationEngine(json_data, max_iter, log_callback, stats_callback, output_base_dir=output_base_dir)
             self.engine.run()
             
             log_callback("Optimization Process Completed.")

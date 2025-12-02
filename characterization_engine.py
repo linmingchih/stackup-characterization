@@ -138,14 +138,15 @@ def save_json(data, json_path):
         json.dump(data, f, indent=2)
 
 class CharacterizationEngine:
-    def __init__(self, json_data, max_iter, log_callback=None, stats_callback=None):
+    def __init__(self, json_data, max_iter, log_callback=None, stats_callback=None, output_base_dir=None):
         self.data = json_data
         self.max_iter = max_iter
         self.log_callback = log_callback
         self.stats_callback = stats_callback
         
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.output_dir = os.path.join(os.getcwd(), f"stackup_characterization_{ts}")
+        base = output_base_dir if output_base_dir else os.getcwd()
+        self.output_dir = os.path.join(base, f"stackup_characterization_{ts}")
         os.makedirs(self.output_dir, exist_ok=True)
         
         self.log_file = os.path.join(self.output_dir, "characterization_log.csv")
