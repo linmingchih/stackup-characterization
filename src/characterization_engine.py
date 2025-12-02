@@ -319,11 +319,14 @@ class CharacterizationEngine:
             
             # Run Modeling
             self.log(f"[{layer_name}] Iter {iteration_count}: Modeling...")
-            subprocess.run([sys.executable, "modeling.py", temp_params_path], check=True)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            modeling_script = os.path.join(script_dir, "modeling.py")
+            subprocess.run([sys.executable, modeling_script, temp_params_path], check=True)
             
             # Run Simulation
             self.log(f"[{layer_name}] Iter {iteration_count}: Simulating...")
-            result = subprocess.run([sys.executable, "simulation.py", aedb_path], capture_output=True, text=True, check=True)
+            simulation_script = os.path.join(script_dir, "simulation.py")
+            result = subprocess.run([sys.executable, simulation_script, aedb_path], capture_output=True, text=True, check=True)
             
             zdiff = 0
             dbs21 = 0
