@@ -5,14 +5,6 @@ from datetime import datetime
 from pyedb import Edb
 
 def create_stackup_model(params):
-    if os.path.isdir(params["output_aedb_path"]):
-        # shutil.rmtree(params["output_aedb_path"], ignore_errors=True) # os.rmdir only works for empty dirs
-        # For safety, let's just let Edb handle it or assume it's a new path. 
-        # The original code used os.rmdir which might fail if not empty.
-        # Let's stick to original logic but maybe safer? 
-        # Edb(..., overwrite=True) is better if available, but let's stick to the script.
-        pass
-
     # Ensure output path is absolute or relative to cwd correctly
     edb = Edb(params["output_aedb_path"], version='2024.1')
 
@@ -88,50 +80,67 @@ def create_stackup_model(params):
     edb.save()
     edb.close_edb()
 
+def create_full_stackup(params):
+    output_path = params["output_aedb_path"]
+    stackup_data = params["stackup_data"]
+    
+    edb = Edb(output_path, version='2024.1')
+    
+    for layer in stackup_data['rows']:
+        layer_name = layer['layername']
+        layer_type = layer['type']
+        thickness = f"{layer['thickness']}mil"
+        
+        if layer_type == 'conductor':
+            material = "copper" # Default
+            etch_factor = float(layer.get('etchfactor', 0))
+            surface_ratio = float(layer.get('hallhuray_surface_ratio', 0))
+            nodule_radius = f"{layer.get('nodule_radius', 0)}um"
+            
+            signal_layer = edb.stackup.add_layer(layer_name=layer_name,
+                                                 method="add_on_bottom",
+                                                 layer_type='signal',
+                                                 thickness=thickness,
+                                                 material=material,
+                                                 etch_factor=etch_factor,
+                                                 enable_roughness=True)
+            
+            signal_layer.top_hallhuray_nodule_radius = nodule_radius
+            signal_layer.top_hallhuray_surface_ratio = surface_ratio
+            signal_layer.bottom_hallhuray_nodule_radius = nodule_radius
+            signal_layer.bottom_hallhuray_surface_ratio = surface_ratio
+            signal_layer.side_hallhuray_nodule_radius = nodule_radius
+            signal_layer.side_hallhuray_surface_ratio = surface_ratio
+            
+        elif layer_type == 'dielectric':
+            dk = float(layer.get('dk', 1))
+            df = float(layer.get('df', 0))
+            mat_name = f'm_{dk}_{df}'
+            
+            if mat_name not in edb.materials.materials:
+                edb.materials.add_dielectric_material(name=mat_name, 
+                                            permittivity=dk, 
+                                            dielectric_loss_tangent=df)
+            
+            edb.stackup.add_layer(layer_name=layer_name,
+                                  method="add_on_bottom",
+                                  layer_type='dielectric',
+                                  thickness=thickness,
+                                  material=mat_name)
+
+    edb.save()
+    edb.close_edb()
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         json_path = sys.argv[1]
         with open(json_path, 'r') as f:
             params = json.load(f)
+            
+        if params.get("mode") == "full_stackup":
+            create_full_stackup(params)
+        else:
+            create_stackup_model(params)
     else:
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        params = {
-            "output_aedb_path": f'tmp/{ts}.aedb',
-            "frequency": 5.0,
-            "target_layer": "top",
-            "trace_params": {
-                "width_mil": 5,
-                "spacing_mil": 6
-            },
-            "ref_layers": ["gnd1"],
-            "layers": [
-                {
-                    "layername": "top",
-                    "type": "signal",
-                    "thickness": "1.2mil",
-                    "material": "copper",
-                    "etch_factor": -2.5,
-                    "hallhuray_surface_ratio": 0.5,
-                    "nodule_radius": "0.5um",
-
-                },
-                {
-                    "layername": "diel1",
-                    "type": "dielectric",
-                    "thickness": "3mil",
-                    "dk": 4.0,
-                    "df": 0.02
-                },
-                {
-                    "layername": "gnd1",
-                    "type": "signal",
-                    "thickness": "1.2mil",
-                    "material": "copper",
-                    "etch_factor": -2.5,
-                    "hallhuray_surface_ratio": 0.5,
-                    "nodule_radius": "0.5um",
-                }
-            ]
-        }
-    
-    create_stackup_model(params)
+        # Default for testing
+        pass
