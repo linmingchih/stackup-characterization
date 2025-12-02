@@ -4,9 +4,19 @@ import os
 from datetime import datetime
 from pyedb import Edb
 
+def load_config():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, "..", "config.json")
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    return {}
+
 def create_stackup_model(params):
+    config = load_config()
+    aedt_version = config.get("aedt_version", "2024.1")
     # Ensure output path is absolute or relative to cwd correctly
-    edb = Edb(params["output_aedb_path"], version='2024.1')
+    edb = Edb(params["output_aedb_path"], version=aedt_version)
 
     for layer in params["layers"]:
         if layer["type"] == "signal":
@@ -84,7 +94,10 @@ def create_full_stackup(params):
     output_path = params["output_aedb_path"]
     stackup_data = params["stackup_data"]
     
-    edb = Edb(output_path, version='2024.1')
+    config = load_config()
+    aedt_version = config.get("aedt_version", "2024.1")
+    
+    edb = Edb(output_path, version=aedt_version)
     
     for layer in stackup_data['rows']:
         layer_name = layer['layername']

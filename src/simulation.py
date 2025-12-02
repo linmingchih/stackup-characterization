@@ -1,8 +1,21 @@
 import sys
+import json
+import os
 from ansys.aedt.core import Hfss3dLayout 
 
+def load_config():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, "..", "config.json")
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    return {}
+
 def run_simulation(edb_path):
-    hfss = Hfss3dLayout(edb_path, version='2025.2', non_graphical=True, remove_lock=True)
+    config = load_config()
+    aedt_version = config.get("aedt_version", "2025.2")
+    
+    hfss = Hfss3dLayout(edb_path, version=aedt_version, non_graphical=True, remove_lock=True)
 
     hfss.set_differential_pair('port1:T1', 'port1:T2', 'comm1', 'diff1')
     hfss.set_differential_pair('port2:T1', 'port2:T2', 'comm2', 'diff2')
