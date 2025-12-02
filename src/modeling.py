@@ -14,9 +14,9 @@ def load_config():
 
 def create_stackup_model(params):
     config = load_config()
-    aedt_version = config.get("aedt_version", "2024.1")
+    edb_version = config.get("edb_version", "2024.1")
     # Ensure output path is absolute or relative to cwd correctly
-    edb = Edb(params["output_aedb_path"], version=aedt_version)
+    edb = Edb(params["output_aedb_path"], version=edb_version)
 
     for layer in params["layers"]:
         if layer["type"] == "signal":
@@ -95,9 +95,9 @@ def create_full_stackup(params):
     stackup_data = params["stackup_data"]
     
     config = load_config()
-    aedt_version = config.get("aedt_version", "2024.1")
+    edb_version = config.get("edb_version", "2024.1")
     
-    edb = Edb(output_path, version=aedt_version)
+    edb = Edb(output_path, version=edb_version)
     
     for layer in stackup_data['rows']:
         layer_name = layer['layername']
