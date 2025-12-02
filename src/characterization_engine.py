@@ -222,7 +222,9 @@ class CharacterizationEngine:
         save_json(full_stackup_params, temp_full_path)
         
         try:
-            subprocess.run([sys.executable, "modeling.py", temp_full_path], check=True)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            modeling_script = os.path.join(script_dir, "modeling.py")
+            subprocess.run([sys.executable, modeling_script, temp_full_path], check=True)
             self.log(f"Full stackup created at {full_aedb_path}")
         except Exception as e:
             self.log(f"Failed to create full stackup: {e}")
