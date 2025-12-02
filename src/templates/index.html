@@ -145,6 +145,53 @@
             color: #888;
             margin-right: 8px;
         }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 
@@ -160,6 +207,7 @@
             <input type="number" id="maxIter" value="10" min="1" style="width: 60px;">
         </div>
         <button id="startBtn" onclick="startOptimization()">Start Optimization</button>
+        <button onclick="openSettings()" style="margin-left: auto; background-color: #6c757d;">Settings</button>
     </div>
 
     <div class="main-panel">
@@ -186,12 +234,54 @@
         <div class="log-entry">Ready to start.</div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>Configuration</h2>
+            <div class="form-group">
+                <label>AEDT Version:</label>
+                <input type="text" id="cfg_aedt_version" placeholder="e.g. 2025.2">
+            </div>
+            <div class="form-group">
+                <label>EDB Version:</label>
+                <input type="text" id="cfg_edb_version" placeholder="e.g. 2024.1">
+            </div>
+            <div class="modal-actions">
+                <button onclick="saveSettings()">Save</button>
+                <button onclick="closeSettings()" style="background-color: #6c757d;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // API Wrapper
         async function selectFile() {
             const path = await pywebview.api.select_file();
             if (path) {
                 document.getElementById('filePath').value = path;
+
+                // Load info and initialize table
+                const result = await pywebview.api.load_file_info(path);
+                if (result.status === 'success') {
+                    const tbody = document.getElementById('statsBody');
+                    tbody.innerHTML = ''; // Clear existing
+
+                    result.layers.forEach(layer => {
+                        updateStats(layer.name, {
+                            status: 'Pending',
+                            iterations: 0,
+                            target_z: layer.target_z,
+                            target_loss: layer.target_loss,
+                            best_z: 0,
+                            best_loss: 0,
+                            time_elapsed: '-'
+                        });
+                    });
+                    addLog(`Loaded ${result.layers.length} signal layers from ${path}`);
+                } else {
+                    alert("Failed to load file info: " + result.message);
+                    addLog("Error loading file: " + result.message);
+                }
             }
         }
 
@@ -209,7 +299,7 @@
             btn.textContent = "Running...";
 
             // Clear table
-            document.getElementById('statsBody').innerHTML = '';
+            // document.getElementById('statsBody').innerHTML = ''; 
             document.getElementById('logPanel').innerHTML = '';
             addLog("Starting optimization...");
 
@@ -275,6 +365,32 @@
             document.getElementById('startBtn').disabled = false;
             document.getElementById('startBtn').textContent = "Start Optimization";
             addLog("All tasks finished.");
+        }
+
+        // Settings Logic
+        async function openSettings() {
+            const config = await pywebview.api.get_config();
+            document.getElementById('cfg_aedt_version').value = config.aedt_version || '';
+            document.getElementById('cfg_edb_version').value = config.edb_version || '';
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        async function saveSettings() {
+            const config = {
+                aedt_version: document.getElementById('cfg_aedt_version').value,
+                edb_version: document.getElementById('cfg_edb_version').value
+            };
+            const result = await pywebview.api.save_config(config);
+            if (result.status === 'success') {
+                closeSettings();
+                addLog("Configuration saved.");
+            } else {
+                alert("Failed to save config: " + result.message);
+            }
         }
     </script>
 </body>

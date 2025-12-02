@@ -84,6 +84,47 @@ class StackupAPI:
     def get_statistics(self):
         return self.stats
 
+    def load_file_info(self, json_path):
+        if not json_path or not os.path.exists(json_path):
+             return {"status": "error", "message": "File not found"}
+        try:
+            with open(json_path, 'r', encoding='utf-8-sig') as f:
+                data = json.load(f)
+            
+            # We need get_signal_layers from characterization_engine, but it's not imported as a function
+            # It's a helper in characterization_engine.py. Let's import it.
+            from characterization_engine import get_signal_layers
+            signal_indices = get_signal_layers(data)
+            layers = []
+            for idx in signal_indices:
+                layer = data['rows'][idx]
+                layers.append({
+                    "name": layer['layername'],
+                    "target_z": float(layer.get('impedance_target', 0)),
+                    "target_loss": float(layer.get('loss_target', 0))
+                })
+            return {"status": "success", "layers": layers}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def get_config(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, "..", "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        return {"aedt_version": "2025.2", "edb_version": "2024.1"}
+
+    def save_config(self, config_data):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, "..", "config.json")
+        try:
+            with open(config_path, 'w') as f:
+                json.dump(config_data, f, indent=2)
+            return {"status": "success", "message": "Configuration saved"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
 def main():
     api = StackupAPI()
     
