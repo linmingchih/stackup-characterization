@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stackup Characterization</title>
+    <link rel="icon" href="data:,">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,31 +17,32 @@
             background-color: #f0f2f5;
             color: #333;
         }
-        
+
         /* Top Bar */
         .top-bar {
             background-color: #ffffff;
             padding: 15px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             gap: 15px;
             z-index: 10;
         }
-        
+
         .control-group {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        
-        input[type="text"], input[type="number"] {
+
+        input[type="text"],
+        input[type="number"] {
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 14px;
         }
-        
+
         button {
             padding: 8px 16px;
             background-color: #007bff;
@@ -50,11 +53,11 @@
             font-size: 14px;
             transition: background-color 0.2s;
         }
-        
+
         button:hover {
             background-color: #0056b3;
         }
-        
+
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -66,40 +69,60 @@
             padding: 20px;
             overflow-y: auto;
         }
-        
+
         .stats-table {
             width: 100%;
             border-collapse: collapse;
             background-color: white;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
-        
-        .stats-table th, .stats-table td {
+
+        .stats-table th,
+        .stats-table td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
-        
+
         .stats-table th {
             background-color: #f8f9fa;
             font-weight: 600;
             color: #555;
         }
-        
+
         .status-badge {
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
         }
-        
-        .status-pending { background-color: #e9ecef; color: #495057; }
-        .status-running { background-color: #e3f2fd; color: #0d6efd; }
-        .status-done { background-color: #d1e7dd; color: #0f5132; }
-        .status-failed { background-color: #f8d7da; color: #842029; }
-        .status-max-iter { background-color: #fff3cd; color: #664d03; }
+
+        .status-pending {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+
+        .status-running {
+            background-color: #e3f2fd;
+            color: #0d6efd;
+        }
+
+        .status-done {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-failed {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .status-max-iter {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
 
         /* Bottom Panel */
         .bottom-panel {
@@ -112,18 +135,19 @@
             font-size: 13px;
             border-top: 1px solid #444;
         }
-        
+
         .log-entry {
             margin-bottom: 4px;
             word-wrap: break-word;
         }
-        
+
         .log-timestamp {
             color: #888;
             margin-right: 8px;
         }
     </style>
 </head>
+
 <body>
 
     <div class="top-bar">
@@ -174,7 +198,7 @@
         async function startOptimization() {
             const path = document.getElementById('filePath').value;
             const maxIter = document.getElementById('maxIter').value;
-            
+
             if (!path) {
                 alert("Please select a file first.");
                 return;
@@ -183,7 +207,7 @@
             const btn = document.getElementById('startBtn');
             btn.disabled = true;
             btn.textContent = "Running...";
-            
+
             // Clear table
             document.getElementById('statsBody').innerHTML = '';
             document.getElementById('logPanel').innerHTML = '';
@@ -212,7 +236,7 @@
             // stats object: { status, iterations, target_z, best_z, target_loss, best_loss, time_elapsed }
             const tbody = document.getElementById('statsBody');
             let row = document.getElementById(`row-${layerName}`);
-            
+
             if (!row) {
                 row = document.createElement('tr');
                 row.id = `row-${layerName}`;
@@ -228,7 +252,7 @@
                 `;
                 tbody.appendChild(row);
             }
-            
+
             // Update columns
             const statusCell = row.querySelector('.col-status');
             let statusClass = 'status-pending';
@@ -236,9 +260,9 @@
             else if (stats.status === 'Done') statusClass = 'status-done';
             else if (stats.status === 'Failed') statusClass = 'status-failed';
             else if (stats.status === 'Max Iter') statusClass = 'status-max-iter';
-            
+
             statusCell.innerHTML = `<span class="status-badge ${statusClass}">${stats.status}</span>`;
-            
+
             row.querySelector('.col-iter').textContent = stats.iterations;
             row.querySelector('.col-target-z').textContent = stats.target_z !== undefined ? stats.target_z.toFixed(2) : '-';
             row.querySelector('.col-best-z').textContent = stats.best_z !== undefined ? stats.best_z.toFixed(2) : '-';
@@ -254,4 +278,5 @@
         }
     </script>
 </body>
+
 </html>

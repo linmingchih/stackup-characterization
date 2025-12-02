@@ -98,7 +98,7 @@ def main():
 
     window = webview.create_window('Stackup Characterization Tool', url=template_path, js_api=api, width=1000, height=800)
     api.set_window(window)
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 if __name__ == '__main__':
     main()
