@@ -2,6 +2,9 @@
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
+REM Add current directory to PATH
+set "PATH=%~dp0;%PATH%"
+
 REM Check for uv
 where uv >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
