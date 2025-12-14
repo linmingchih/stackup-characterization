@@ -343,7 +343,8 @@ class CharacterizationEngine:
             
             z_error = abs(zdiff - target_z) / target_z
             loss_error = abs(dbs21 - target_loss) / abs(target_loss)
-            total_error = z_error + loss_error
+            # Prioritize Target Z over Target Loss
+            total_error = 5.0 * z_error + loss_error
             
             # Update Best
             if total_error < best_error:
