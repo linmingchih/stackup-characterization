@@ -55,13 +55,13 @@ def create_stackup_model(params):
     spacing_mil = params["trace_params"]['spacing_mil']
     width_mil = params["trace_params"]['width_mil']
 
-    line_p = edb.modeler.create_trace([('0mil', f'{(spacing_mil+width_mil)/2}mil'), ('100mil', f'{(spacing_mil+width_mil)/2}mil')], 
+    line_p = edb.modeler.create_trace([('0mil', f'{(spacing_mil+width_mil)/2}mil'), ('10mil', f'{(spacing_mil+width_mil)/2}mil')], 
                                         width=f'{width_mil}mil',
                                         net_name='pos',
                                         layer_name=params["target_layer"],
                                         start_cap_style='Flat',
                                         end_cap_style='Flat')
-    line_n = edb.modeler.create_trace([('0mil', f'{-(spacing_mil+width_mil)/2}mil'), ('100mil', f'{-(spacing_mil+width_mil)/2}mil')],
+    line_n = edb.modeler.create_trace([('0mil', f'{-(spacing_mil+width_mil)/2}mil'), ('10mil', f'{-(spacing_mil+width_mil)/2}mil')],
                                         width=f'{width_mil}mil',
                                         net_name='neg',
                                         layer_name=params["target_layer"],
@@ -72,14 +72,14 @@ def create_stackup_model(params):
         edb.modeler.create_rectangle(layer_name=layername, 
                                 net_name='GND',
                                 lower_left_point=('0mil', '-50mil'),
-                                upper_right_point=('100mil', '50mil')
+                                upper_right_point=('10mil', '50mil')
                                 )
                                                    
 
     edb.hfss.create_differential_wave_port(line_p, line_p.center_line[0], line_n, line_n.center_line[0], port_name='port1')
     edb.hfss.create_differential_wave_port(line_p, line_p.center_line[-1], line_n, line_n.center_line[-1], port_name='port2')
     edb.excitations['port1'].deembed = True
-    edb.excitations['port1'].deembed_length = '-900mil'
+    edb.excitations['port1'].deembed_length = '-990mil'
 
     setup = edb.create_hfss_setup()
     setup.set_solution_single_frequency(frequency=f'{params["frequency"]}GHz', 
