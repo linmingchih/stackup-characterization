@@ -373,10 +373,35 @@ class CharacterizationEngine:
             
             return total_error
 
+        # Construct initial simplex for larger steps
+        N = len(x0)
+        initial_simplex = [x0]
+        for i in range(N):
+            point = list(x0)
+            k = keys[i]
+            val = x0[i]
+            
+            # Re-calculate variation for step size
+            variation = 0.2
+            if 'etch_factor' in k: variation = float(settings['etchfactor']['variation'].strip('%'))/100
+            elif 'thickness' in k: variation = float(settings['thickness']['variation'].strip('%'))/100
+            elif 'dk' in k: variation = float(settings['dk']['variation'].strip('%'))/100
+            elif 'df' in k: variation = float(settings['df']['variation'].strip('%'))/100
+            elif 'surface_ratio' in k: variation = float(settings['hallhuray_surface_ratio']['variation'].strip('%'))/100
+            elif 'nodule_radius' in k: variation = float(settings['nodule_radius']['variation'].strip('%'))/100
+            
+            # Create a step that is a significant portion of the allowed variation (e.g. 50%)
+            step = val * variation * 0.5
+            if step == 0: step = 0.001
+            
+            point[i] += step
+            initial_simplex.append(point)
+
         # Run optimization
         # We set maxiter in options, but also handle it in objective
         try:
-            res = minimize(objective, x0, bounds=bounds, method='Nelder-Mead', tol=0.01, options={'maxiter': self.max_iter})
+            res = minimize(objective, x0, bounds=bounds, method='Nelder-Mead', tol=0.01, 
+                           options={'maxiter': self.max_iter, 'initial_simplex': initial_simplex})
             success = res.success
             msg = "Optimization converged" if success else "Max iterations reached or failed"
         except Exception as e:
