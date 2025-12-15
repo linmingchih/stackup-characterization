@@ -293,12 +293,15 @@ class CharacterizationEngine:
         # Tracking best
         best_error = float('inf')
         best_x = x0
+        best_error = float('inf')
+        best_x = x0
         best_metrics = (0, 0) # z, loss
+        current_metrics = (0, 0)
         
         iteration_count = 0
 
         def objective(x):
-            nonlocal iteration_count, best_error, best_x, best_metrics
+            nonlocal iteration_count, best_error, best_x, best_metrics, current_metrics
             
             # Check max iter
             if iteration_count >= self.max_iter:
@@ -341,6 +344,8 @@ class CharacterizationEngine:
             
             self.log(f"[{layer_name}] Iter {iteration_count}: Zdiff={zdiff:.2f}, S21={dbs21:.2f}")
             
+            current_metrics = (zdiff, dbs21)
+
             z_error = abs(zdiff - target_z) / target_z
             loss_error = abs(dbs21 - target_loss) / abs(target_loss)
             # Prioritize Target Z over Target Loss
@@ -373,37 +378,66 @@ class CharacterizationEngine:
             
             return total_error
 
-        # Construct initial simplex for larger steps
-        N = len(x0)
-        initial_simplex = [x0]
-        for i in range(N):
-            point = list(x0)
-            k = keys[i]
-            val = x0[i]
-            
-            # Re-calculate variation for step size
-            variation = 0.2
-            if 'etch_factor' in k: variation = float(settings['etchfactor']['variation'].strip('%'))/100
-            elif 'thickness' in k: variation = float(settings['thickness']['variation'].strip('%'))/100
-            elif 'dk' in k: variation = float(settings['dk']['variation'].strip('%'))/100
-            elif 'df' in k: variation = float(settings['df']['variation'].strip('%'))/100
-            elif 'surface_ratio' in k: variation = float(settings['hallhuray_surface_ratio']['variation'].strip('%'))/100
-            elif 'nodule_radius' in k: variation = float(settings['nodule_radius']['variation'].strip('%'))/100
-            
-            # Create a step that is a significant portion of the allowed variation (e.g. 50%)
-            step = val * variation * 0.5
-            if step == 0: step = 0.001
-            
-            point[i] += step
-            initial_simplex.append(point)
-
-        # Run optimization
-        # We set maxiter in options, but also handle it in objective
+        # Custom optimization loop using correlations
+        # 1. z is negatively correlated with dk, positively correlated with thickness
+        # 2. loss is postively correlated with df, 'hallhuray_surface_ratio' and 'nodule_radius'
+        
+        current_x = list(x0)
+        learning_rate = 0.5
+        
         try:
-            res = minimize(objective, x0, bounds=bounds, method='Nelder-Mead', tol=0.01, 
-                           options={'maxiter': self.max_iter, 'initial_simplex': initial_simplex})
-            success = res.success
-            msg = "Optimization converged" if success else "Max iterations reached or failed"
+            while iteration_count < self.max_iter:
+                error = objective(current_x)
+                
+                # Check convergence or max iter (objective returns large value on max iter)
+                if error < 0.05 or iteration_count >= self.max_iter: 
+                    break
+                    
+                # Calculate next step based on correlations
+                z_curr, s21_curr = current_metrics
+                
+                # Calculate deviations
+                # Z deviation: (Target - Current) / Target
+                # If Z_curr < Target, dev > 0. We need to increase Z.
+                z_dev = (target_z - z_curr) / target_z
+                
+                # Loss (S21) deviation: (Target - Current) / abs(Target)
+                # If S21_curr < Target (e.g. -10 < -5), dev > 0. We need to increase S21 (reduce loss).
+                s21_dev = (target_loss - s21_curr) / abs(target_loss)
+                
+                next_x = list(current_x)
+                
+                for i, k in enumerate(keys):
+                    val = current_x[i]
+                    step = 0
+                    
+                    # Z Correlations
+                    if 'thickness' in k:
+                        # Positive correlation: Increase thickness to increase Z
+                        step += val * z_dev * learning_rate
+                    elif 'dk' in k:
+                        # Negative correlation: Decrease Dk to increase Z
+                        step -= val * z_dev * learning_rate
+                        
+                    # Loss Correlations
+                    # Loss (attenuation) is positive with Df, Roughness.
+                    # S21 is negative with Df, Roughness.
+                    # If s21_dev > 0 (need more S21), we need to decrease Df/Roughness.
+                    if 'df' in k:
+                        step -= val * s21_dev * learning_rate
+                    elif 'hallhuray_surface_ratio' in k or 'nodule_radius' in k:
+                        step -= val * s21_dev * learning_rate
+                        
+                    next_x[i] += step
+                    
+                    # Clamp to bounds
+                    lower, upper = bounds[i]
+                    next_x[i] = max(lower, min(upper, next_x[i]))
+                
+                current_x = next_x
+            
+            msg = "Optimization finished"
+            success = True
         except Exception as e:
             msg = f"Optimization failed: {e}"
             success = False
