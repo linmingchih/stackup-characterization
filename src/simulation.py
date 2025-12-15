@@ -21,14 +21,15 @@ def run_simulation(edb_path):
     hfss.set_differential_pair('port2:T1', 'port2:T2', 'comm2', 'diff2')
 
     hfss.analyze(cores=20)
-    data = hfss.post.get_solution_data('re(S(diff1,diff1))', context="Differential Pairs")
+    data = hfss.post.get_solution_data('mean(re(St(Diff1,Diff1)))', context="Differential Pairs")
     s11 = data.data_real()[0]
     zdiff = 100 * (1 + s11) / (1 - s11)
 
     data = hfss.post.get_solution_data('dB(S(diff2,diff1))', context="Differential Pairs")
-    dbs21 = data.data_real()[0] 
-
+    dbs21 = data.data_real()[-1] 
+    hfss.save_project()
     print(f"RESULT: {zdiff}, {dbs21}")
+
     hfss.release_desktop()
 
 if __name__ == "__main__":
