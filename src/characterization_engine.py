@@ -152,7 +152,7 @@ class CharacterizationEngine:
         self.log_file = os.path.join(self.output_dir, "characterization_log.csv")
         with open(self.log_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["iteration", "layer", "width", "spacing", "thickness", "etch_factor", "dk_up", "dk_down", "df_up", "df_down", "Zdiff", "S21", "pass?"])
+            writer.writerow(["iteration", "layer", "width", "spacing", "thickness", "etch_factor", "hallhuray_surface_ratio", "nodule_radius", "dk_up", "dk_down", "df_up", "df_down", "Zdiff", "S21", "pass?"])
 
     def log(self, msg):
         print(msg)
@@ -363,6 +363,7 @@ class CharacterizationEngine:
                 row = [
                     iteration_count, layer_name, layer['width'], layer['spacing'],
                     current_vals.get('thickness', ''), current_vals.get('etch_factor', ''),
+                    current_vals.get('hallhuray_surface_ratio', ''), current_vals.get('nodule_radius', ''),
                     current_vals.get('dk_up', ''), current_vals.get('dk_down', ''),
                     current_vals.get('df_up', ''), current_vals.get('df_down', ''),
                     zdiff, dbs21, total_error < 0.02
