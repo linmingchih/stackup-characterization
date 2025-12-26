@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import time
+import webbrowser
 from characterization_engine import CharacterizationEngine
 
 class StackupAPI:
@@ -125,6 +126,23 @@ class StackupAPI:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+    def open_stackup_editor(self):
+        try:
+            # Assuming stackup_viewer.html is in the root directory
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            viewer_path = os.path.join(script_dir, "..", "..", "stackup_viewer.html")
+            if not os.path.exists(viewer_path):
+                 # Fallback for dev environment or different structure
+                 viewer_path = os.path.join(os.getcwd(), "stackup_viewer.html")
+            
+            if os.path.exists(viewer_path):
+                webbrowser.open(f"file://{os.path.abspath(viewer_path)}")
+                return {"status": "success", "message": "Opened Stackup Editor"}
+            else:
+                return {"status": "error", "message": "stackup_viewer.html not found"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
 def main():
     api = StackupAPI()
     
@@ -138,7 +156,7 @@ def main():
 
     window = webview.create_window('Stackup Characterization Tool', url=template_path, js_api=api, width=1000, height=800)
     api.set_window(window)
-    webview.start(debug=False)
+    webview.start(debug=True)
 
 if __name__ == '__main__':
     main()
