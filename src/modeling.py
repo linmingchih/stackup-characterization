@@ -145,6 +145,8 @@ def create_full_stackup(params):
                                   material=mat_name)
 
     edb.save()
+    edb.stackup.export(f'{params["output_aedb_path"]}/full_stackup.xml', include_material_with_layer=True)
+
     edb.close_edb()
 
 if __name__ == "__main__":
