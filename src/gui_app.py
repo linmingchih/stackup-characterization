@@ -22,7 +22,7 @@ class StackupAPI:
         result = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=file_types)
         return result[0] if result else None
 
-    def start_optimization(self, json_path, max_iter):
+    def start_optimization(self, json_path, max_iter, symmetry=False):
         if self.running:
             return {"status": "error", "message": "Optimization already running"}
         
@@ -46,13 +46,13 @@ class StackupAPI:
             return {"status": "error", "message": f"Failed to load JSON: {str(e)}"}
 
         # Start thread
-        thread = threading.Thread(target=self._run_engine, args=(json_data, max_iter, json_path))
+        thread = threading.Thread(target=self._run_engine, args=(json_data, max_iter, json_path, symmetry))
         thread.daemon = True
         thread.start()
         
         return {"status": "success", "message": "Optimization started"}
 
-    def _run_engine(self, json_data, max_iter, original_path):
+    def _run_engine(self, json_data, max_iter, original_path, symmetry):
         def log_callback(msg):
             if self.window:
                 # Escape quotes for JS
@@ -68,7 +68,7 @@ class StackupAPI:
             # Determine output directory based on original file
             output_base_dir = os.path.dirname(original_path)
             
-            self.engine = CharacterizationEngine(json_data, max_iter, log_callback, stats_callback, output_base_dir=output_base_dir)
+            self.engine = CharacterizationEngine(json_data, max_iter, log_callback, stats_callback, output_base_dir=output_base_dir, symmetry=symmetry)
             self.engine.run()
             
             log_callback("Optimization Process Completed.")
@@ -156,7 +156,7 @@ def main():
 
     window = webview.create_window('Stackup Characterization Tool', url=template_path, js_api=api, width=1000, height=800)
     api.set_window(window)
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 if __name__ == '__main__':
     main()

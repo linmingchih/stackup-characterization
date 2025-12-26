@@ -138,11 +138,12 @@ def save_json(data, json_path):
         json.dump(data, f, indent=2)
 
 class CharacterizationEngine:
-    def __init__(self, json_data, max_iter, log_callback=None, stats_callback=None, output_base_dir=None):
+    def __init__(self, json_data, max_iter, log_callback=None, stats_callback=None, output_base_dir=None, symmetry=False):
         self.data = json_data
         self.max_iter = max_iter
         self.log_callback = log_callback
         self.stats_callback = stats_callback
+        self.symmetry = symmetry
         
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         base = output_base_dir if output_base_dir else os.getcwd()
@@ -165,10 +166,20 @@ class CharacterizationEngine:
 
     def run(self):
         self.log(f"Starting characterization. Output dir: {self.output_dir}")
+        self.log(f"Symmetry Mode: {'Enabled' if self.symmetry else 'Disabled'}")
+        
         signal_indices = get_signal_layers(self.data)
         self.log(f"Found {len(signal_indices)} signal layers to characterize.")
         
-        for idx in signal_indices:
+        midpoint = len(signal_indices) // 2
+        
+        for i, idx in enumerate(signal_indices):
+            layer_name = self.data['rows'][idx]['layername']
+            
+            if self.symmetry and i >= midpoint:
+                self.log(f"Skipping optimization for bottom layer {layer_name} (Symmetry enabled)")
+                continue
+
             optimized_params = self.optimize_layer(idx)
             
             # Update data with optimized params
@@ -186,6 +197,44 @@ class CharacterizationEngine:
             if layer_info['diel_below']:
                 if 'dk_down' in optimized_params: layer_info['diel_below']['dk'] = str(optimized_params['dk_down'])
                 if 'df_down' in optimized_params: layer_info['diel_below']['df'] = str(optimized_params['df_down'])
+
+            # Apply to symmetric layer if enabled
+            if self.symmetry:
+                sym_idx_in_list = len(signal_indices) - 1 - i
+                if sym_idx_in_list > i: # Ensure we don't double apply to middle layer if odd count
+                    sym_layer_idx = signal_indices[sym_idx_in_list]
+                    sym_layer_name = self.data['rows'][sym_layer_idx]['layername']
+                    self.log(f"Applying symmetric params from {layer_name} to {sym_layer_name}")
+                    
+                    sym_layer = self.data['rows'][sym_layer_idx]
+                    if 'thickness' in optimized_params: sym_layer['thickness'] = str(optimized_params['thickness'])
+                    if 'etch_factor' in optimized_params: sym_layer['etchfactor'] = str(optimized_params['etch_factor'])
+                    if 'hallhuray_surface_ratio' in optimized_params: sym_layer['hallhuray_surface_ratio'] = str(optimized_params['hallhuray_surface_ratio'])
+                    if 'nodule_radius' in optimized_params: sym_layer['nodule_radius'] = str(optimized_params['nodule_radius'])
+                    
+                    sym_layer_info = extract_layer_params(self.data, sym_layer_idx)
+                    
+                    # Map Top-Up -> Bottom-Down, Top-Down -> Bottom-Up
+                    # diel_above (Top) -> diel_below (Bottom)
+                    if sym_layer_info['diel_below']:
+                         if 'dk_up' in optimized_params: sym_layer_info['diel_below']['dk'] = str(optimized_params['dk_up'])
+                         if 'df_up' in optimized_params: sym_layer_info['diel_below']['df'] = str(optimized_params['df_up'])
+                    
+                    # diel_below (Top) -> diel_above (Bottom)
+                    if sym_layer_info['diel_above']:
+                         if 'dk_down' in optimized_params: sym_layer_info['diel_above']['dk'] = str(optimized_params['dk_down'])
+                         if 'df_down' in optimized_params: sym_layer_info['diel_above']['df'] = str(optimized_params['df_down'])
+                    
+                    # Update stats for symmetric layer to show it's done
+                    self.update_stats(sym_layer_name, {
+                        "status": "Done (Sym)",
+                        "iterations": "-",
+                        "target_z": float(sym_layer.get('impedance_target', 0)),
+                        "target_loss": float(sym_layer.get('loss_target', 0)),
+                        "best_z": "-",
+                        "best_loss": "-",
+                        "time_elapsed": "-"
+                    })
 
         # Final Step: Create Full Stackup
         self.log("Creating full stackup model...")

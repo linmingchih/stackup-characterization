@@ -216,6 +216,10 @@
             <label for="maxIter">Max Iterations:</label>
             <input type="number" id="maxIter" value="10" min="1" style="width: 60px;">
         </div>
+        <div class="control-group">
+            <input type="checkbox" id="symmetry">
+            <label for="symmetry">Symmetry</label>
+        </div>
         <button id="startBtn" onclick="startOptimization()" title="Start Optimization">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path
@@ -316,6 +320,7 @@
         async function startOptimization() {
             const path = document.getElementById('filePath').value;
             const maxIter = document.getElementById('maxIter').value;
+            const symmetry = document.getElementById('symmetry').checked;
 
             if (!path) {
                 alert("Please select a file first.");
@@ -325,17 +330,19 @@
             const btn = document.getElementById('startBtn');
             btn.disabled = true;
             btn.textContent = "Running...";
+            document.getElementById('symmetry').disabled = true;
 
             // Clear table
             // document.getElementById('statsBody').innerHTML = ''; 
             document.getElementById('logPanel').innerHTML = '';
             addLog("Starting optimization...");
 
-            const result = await pywebview.api.start_optimization(path, maxIter);
+            const result = await pywebview.api.start_optimization(path, maxIter, symmetry);
             if (result.status === 'error') {
                 alert(result.message);
                 btn.disabled = false;
                 btn.textContent = "Start Optimization";
+                document.getElementById('symmetry').disabled = false;
                 addLog("Error: " + result.message);
             }
         }
@@ -382,10 +389,10 @@
             statusCell.innerHTML = `<span class="status-badge ${statusClass}">${stats.status}</span>`;
 
             row.querySelector('.col-iter').textContent = stats.iterations;
-            row.querySelector('.col-target-z').textContent = stats.target_z !== undefined ? stats.target_z.toFixed(2) : '-';
-            row.querySelector('.col-best-z').textContent = stats.best_z !== undefined ? stats.best_z.toFixed(2) : '-';
-            row.querySelector('.col-target-loss').textContent = stats.target_loss !== undefined ? stats.target_loss.toFixed(3) : '-';
-            row.querySelector('.col-best-loss').textContent = stats.best_loss !== undefined ? stats.best_loss.toFixed(3) : '-';
+            row.querySelector('.col-target-z').textContent = (typeof stats.target_z === 'number') ? stats.target_z.toFixed(2) : (stats.target_z || '-');
+            row.querySelector('.col-best-z').textContent = (typeof stats.best_z === 'number') ? stats.best_z.toFixed(2) : (stats.best_z || '-');
+            row.querySelector('.col-target-loss').textContent = (typeof stats.target_loss === 'number') ? stats.target_loss.toFixed(3) : (stats.target_loss || '-');
+            row.querySelector('.col-best-loss').textContent = (typeof stats.best_loss === 'number') ? stats.best_loss.toFixed(3) : (stats.best_loss || '-');
             row.querySelector('.col-time').textContent = stats.time_elapsed || '-';
         }
 
@@ -394,6 +401,7 @@
             document.getElementById('startBtn').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
             </svg>`;
+            document.getElementById('symmetry').disabled = false;
             addLog("All tasks finished.");
         }
 
