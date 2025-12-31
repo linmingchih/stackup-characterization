@@ -338,6 +338,15 @@ class CharacterizationEngine:
             upper = val * (1 + variation) if val > 0 else val * (1 - variation)
             if lower > upper: lower, upper = upper, lower
             bounds.append((lower, upper))
+            
+        # Capture initial signs for Etch Factor constraint
+        initial_etch_sign = 1.0
+        if 'etch_factor' in initial_values:
+            initial_etch_sign = 1.0 if initial_values['etch_factor'] >= 0 else -1.0
+
+        # Tolerances
+        z_tol_percent = float(settings['impedance_target']['tolerance'].strip('%')) / 100
+        loss_tol_percent = float(settings['loss_target']['tolerance'].strip('%')) / 100
 
         # Tracking best
         best_error = float('inf')
@@ -440,22 +449,24 @@ class CharacterizationEngine:
             while iteration_count < self.max_iter:
                 error = objective(current_x)
                 
-                # Check convergence or max iter (objective returns large value on max iter)
-                if error < 0.05 or iteration_count >= self.max_iter: 
+                # Check convergence
+                z_error_percent = abs(z_dev)
+                loss_error_percent = abs(s21_dev)
+                
+                if z_error_percent <= z_tol_percent and loss_error_percent <= loss_tol_percent:
+                    self.log(f"[{layer_name}] Converged! Z err: {z_error_percent:.2%}, Loss err: {loss_error_percent:.2%}")
                     break
-                    
-                # Calculate next step based on correlations
-                z_curr, s21_curr = current_metrics
                 
-                # Calculate deviations
-                # Z deviation: (Target - Current) / Target
-                # If Z_curr < Target, dev > 0. We need to increase Z.
-                z_dev = (target_z - z_curr) / target_z
+                # Determine which parameters to update
+                # Priority: Fix Z first. If Z is good, fix Loss.
+                update_z_params = z_error_percent > z_tol_percent
+                update_loss_params = not update_z_params # Only update loss if Z is good
                 
-                # Loss (S21) deviation: (Target - Current) / abs(Target)
-                # If S21_curr < Target (e.g. -10 < -5), dev > 0. We need to increase S21 (reduce loss).
-                s21_dev = (target_loss - s21_curr) / abs(target_loss)
-                
+                if update_z_params:
+                    self.log(f"[{layer_name}] Adjusting Z params (Error: {z_error_percent:.2%})")
+                else:
+                    self.log(f"[{layer_name}] Adjusting Loss params (Error: {loss_error_percent:.2%})")
+
                 next_x = list(current_x)
                 
                 for i, k in enumerate(keys):
@@ -465,34 +476,47 @@ class CharacterizationEngine:
                     lower_bound, upper_bound = bounds[i]
                     param_range = upper_bound - lower_bound
 
-                    # Z Correlations
-                    if 'thickness' in k:
-                        # Positive correlation: Increase thickness to increase Z
-                        step += param_range * z_dev * learning_rate
-                    elif 'dk' in k:
-                        # Negative correlation: Decrease Dk to increase Z
-                        step -= param_range * z_dev * learning_rate
-                    elif 'etch_factor' in k:
-                        # Negative correlation: Decrease Etch Factor (more trapezoidal) to increase Z
-                        step -= param_range * z_dev * learning_rate
+                    # Z Correlations (Dk, Thickness, Etch Factor)
+                    if update_z_params:
+                        if 'thickness' in k:
+                            # Positive correlation: Increase thickness to increase Z
+                            step += param_range * z_dev * learning_rate
+                        elif 'dk' in k:
+                            # Negative correlation: Decrease Dk to increase Z
+                            step -= param_range * z_dev * learning_rate
+                        elif 'etch_factor' in k:
+                            # Negative correlation: Decrease Etch Factor (more trapezoidal) to increase Z
+                            step -= param_range * z_dev * learning_rate
                         
-                    # Loss Correlations
-                    # Loss (attenuation) is positive with Df, Roughness.
-                    # S21 is negative with Df, Roughness.
-                    # If s21_dev > 0 (need more S21), we need to decrease Df/Roughness.
-                    if 'df' in k:
-                        step -= param_range * s21_dev * learning_rate
-                    elif 'hallhuray_surface_ratio' in k or 'nodule_radius' in k:
-                        step -= param_range * s21_dev * learning_rate
-                    elif 'etch_factor' in k:
-                        # Positive correlation: Increase Etch Factor (more rectangular) to increase S21 (reduce loss)
-                        step += param_range * s21_dev * learning_rate
+                    # Loss Correlations (Df, Roughness)
+                    if update_loss_params:
+                        # Loss (attenuation) is positive with Df, Roughness.
+                        # S21 is negative with Df, Roughness.
+                        # If s21_dev > 0 (need more S21), we need to decrease Df/Roughness.
+                        if 'df' in k:
+                            step -= param_range * s21_dev * learning_rate
+                        elif 'hallhuray_surface_ratio' in k or 'nodule_radius' in k:
+                            step -= param_range * s21_dev * learning_rate
+                        # Etch factor also affects loss, but we prioritize Z for it. 
+                        # If we want to fine-tune loss with etch factor when Z is good, we could add it here,
+                        # but usually geometry is locked for Z. Let's stick to Df/Roughness for Loss phase.
                         
                     next_x[i] += step
                     
-                    # Clamp to bounds
-                    lower, upper = bounds[i]
-                    next_x[i] = max(lower, min(upper, next_x[i]))
+                    # Clamp to bounds and Physical Constraints
+                    # 1. Bounds from variation settings
+                    next_x[i] = max(lower_bound, min(upper_bound, next_x[i]))
+                    
+                    # 2. Physical Constraints (> 0)
+                    if 'etch_factor' in k:
+                        # Maintain sign
+                        if initial_etch_sign > 0:
+                            next_x[i] = max(next_x[i], 0.001) # Must be positive
+                        else:
+                            next_x[i] = min(next_x[i], -0.001) # Must be negative
+                    else:
+                        # All other params (thickness, dk, df, roughness) must be positive
+                        next_x[i] = max(next_x[i], 0.000001)
                 
                 current_x = next_x
             
