@@ -433,7 +433,8 @@ class CharacterizationEngine:
         # 2. loss is postively correlated with df, 'hallhuray_surface_ratio' and 'nodule_radius'
         
         current_x = list(x0)
-        learning_rate = 0.5
+        current_x = list(x0)
+        learning_rate = 2.0
         
         try:
             while iteration_count < self.max_iter:
@@ -461,22 +462,31 @@ class CharacterizationEngine:
                     val = current_x[i]
                     step = 0
                     
+                    lower_bound, upper_bound = bounds[i]
+                    param_range = upper_bound - lower_bound
+
                     # Z Correlations
                     if 'thickness' in k:
                         # Positive correlation: Increase thickness to increase Z
-                        step += val * z_dev * learning_rate
+                        step += param_range * z_dev * learning_rate
                     elif 'dk' in k:
                         # Negative correlation: Decrease Dk to increase Z
-                        step -= val * z_dev * learning_rate
+                        step -= param_range * z_dev * learning_rate
+                    elif 'etch_factor' in k:
+                        # Negative correlation: Decrease Etch Factor (more trapezoidal) to increase Z
+                        step -= param_range * z_dev * learning_rate
                         
                     # Loss Correlations
                     # Loss (attenuation) is positive with Df, Roughness.
                     # S21 is negative with Df, Roughness.
                     # If s21_dev > 0 (need more S21), we need to decrease Df/Roughness.
                     if 'df' in k:
-                        step -= val * s21_dev * learning_rate
+                        step -= param_range * s21_dev * learning_rate
                     elif 'hallhuray_surface_ratio' in k or 'nodule_radius' in k:
-                        step -= val * s21_dev * learning_rate
+                        step -= param_range * s21_dev * learning_rate
+                    elif 'etch_factor' in k:
+                        # Positive correlation: Increase Etch Factor (more rectangular) to increase S21 (reduce loss)
+                        step += param_range * s21_dev * learning_rate
                         
                     next_x[i] += step
                     
