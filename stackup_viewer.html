@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Stackup Table Viewer</title>
@@ -9,10 +10,12 @@
       margin: 20px;
       color: #1f2933;
     }
+
     h1 {
       font-size: 1.5rem;
       margin-bottom: 12px;
     }
+
     .controls {
       display: flex;
       gap: 8px;
@@ -20,9 +23,11 @@
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
+
     input[type="file"] {
       font-size: 0.95rem;
     }
+
     .frequency-control {
       display: inline-flex;
       align-items: center;
@@ -33,6 +38,7 @@
       border-radius: 4px;
       background-color: #f8fafc;
     }
+
     .frequency-control input {
       width: 80px;
       padding: 2px 4px;
@@ -40,6 +46,7 @@
       border-radius: 4px;
       font-size: 0.9rem;
     }
+
     button {
       padding: 6px 16px;
       font-size: 0.95rem;
@@ -49,47 +56,62 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
     button[disabled] {
       background-color: #94a3b8;
       border-color: #94a3b8;
       cursor: not-allowed;
     }
+
     table {
       border-collapse: collapse;
       width: 100%;
       max-width: 100%;
     }
-    th, td {
+
+    th,
+    td {
       border: 1px solid #cbd5e1;
       padding: 6px 8px;
       text-align: left;
       font-size: 0.9rem;
     }
-th {
-  background-color: #e2e8f0;
-  font-weight: 600;
-}
-th[class*="col-"], td[class*="col-"] {
-  width: 1%;
-  white-space: nowrap;
-}
-td.col-reference_layers {
-  white-space: normal;
-}
-td.col-layername {
-  white-space: normal;
-}
-th.variation-col, td.variation-col {
-  background-color: #ecfdf3;
-}
-th.tolerance-col, td.tolerance-col {
-  background-color: #fffbea;
-}
+
+    th {
+      background-color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    th[class*="col-"],
+    td[class*="col-"] {
+      width: 1%;
+      white-space: nowrap;
+    }
+
+    td.col-reference_layers {
+      white-space: normal;
+    }
+
+    td.col-layername {
+      white-space: normal;
+    }
+
+    th.variation-col,
+    td.variation-col {
+      background-color: #ecfdf3;
+    }
+
+    th.tolerance-col,
+    td.tolerance-col {
+      background-color: #fffbea;
+    }
+
     th .header-title {
       display: block;
       margin-bottom: 4px;
       white-space: nowrap;
     }
+
     th .header-control {
       display: inline-flex;
       align-items: center;
@@ -99,9 +121,11 @@ th.tolerance-col, td.tolerance-col {
       color: #475569;
       background-color: transparent;
     }
+
     th .header-control span {
       white-space: nowrap;
     }
+
     th .header-control input {
       width: 30px;
       padding: 2px 4px;
@@ -110,14 +134,17 @@ th.tolerance-col, td.tolerance-col {
       font-size: 0.75rem;
       appearance: textfield;
     }
+
     th .header-control input::-webkit-outer-spin-button,
     th .header-control input::-webkit-inner-spin-button {
       margin: 0;
       -webkit-appearance: none;
     }
+
     tbody tr:nth-child(even) {
       background-color: #f8fafc;
     }
+
     #message {
       color: #b91c1c;
       margin-bottom: 12px;
@@ -125,10 +152,11 @@ th.tolerance-col, td.tolerance-col {
     }
   </style>
 </head>
+
 <body>
   <h1>Stackup Table</h1>
   <div class="controls">
-    <input type="file" id="fileInput" accept=".xml">
+    <input type="file" id="fileInput" accept=".xml,.json">
     <label class="frequency-control" for="frequencyInput">
       <span>Frequency</span>
       <input type="number" id="frequencyInput" min="0" step="0.1" value="5">
@@ -271,16 +299,55 @@ th.tolerance-col, td.tolerance-col {
 
         reader.onload = () => {
           try {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(reader.result, 'application/xml');
-            const parserError = xmlDoc.querySelector('parsererror');
-            if (parserError) {
-              throw new Error('File is not valid XML.');
+            if (file.name.toLowerCase().endsWith('.json')) {
+              const jsonData = JSON.parse(reader.result);
+
+              // Update Frequency
+              if (jsonData.frequency !== undefined) {
+                frequencyInput.value = jsonData.frequency;
+              }
+
+              // Update Settings (Variations/Tolerances)
+              if (jsonData.settings) {
+                headerControlConfigs.forEach(config => {
+                  const setting = jsonData.settings[config.columnKey];
+                  if (setting && setting[config.settingKey]) {
+                    const valStr = setting[config.settingKey].replace('%', '');
+                    const val = parseFloat(valStr);
+                    if (!isNaN(val)) {
+                      const inputEl = document.getElementById(config.id);
+                      if (inputEl) {
+                        inputEl.value = val;
+                        columnSettings[config.columnKey][config.settingKey] = toPercentString(val);
+                      }
+                    }
+                  }
+                });
+              }
+
+              // Update Table Data
+              if (Array.isArray(jsonData.rows)) {
+                tableData = jsonData.rows;
+                renderTable(tableData);
+                messageEl.textContent = '';
+                downloadBtn.disabled = tableData.length === 0;
+              } else {
+                throw new Error('Invalid JSON format: missing "rows" array.');
+              }
+
+            } else {
+              // XML Parsing (Existing Logic)
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(reader.result, 'application/xml');
+              const parserError = xmlDoc.querySelector('parsererror');
+              if (parserError) {
+                throw new Error('File is not valid XML.');
+              }
+              tableData = buildTableData(xmlDoc);
+              renderTable(tableData);
+              messageEl.textContent = '';
+              downloadBtn.disabled = tableData.length === 0;
             }
-            tableData = buildTableData(xmlDoc);
-            renderTable(tableData);
-            messageEl.textContent = '';
-            downloadBtn.disabled = tableData.length === 0;
           } catch (error) {
             tableData = [];
             renderTable(tableData);
@@ -565,4 +632,5 @@ th.tolerance-col, td.tolerance-col {
     })();
   </script>
 </body>
+
 </html>
