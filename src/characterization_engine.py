@@ -525,8 +525,10 @@ class CharacterizationEngine:
                             next_x[i] = max(next_x[i], 0.001) # Must be positive
                         else:
                             next_x[i] = min(next_x[i], -0.001) # Must be negative
+                    elif 'dk' in k:
+                        next_x[i] = max(next_x[i], 1.0)
                     else:
-                        # All other params (thickness, dk, df, roughness) must be positive
+                        # All other params (thickness, df, roughness) must be positive
                         next_x[i] = max(next_x[i], 0.000001)
                 
                 current_x = next_x
