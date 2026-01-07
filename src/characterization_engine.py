@@ -9,6 +9,9 @@ from scipy.optimize import minimize
 import shutil
 
 # Helper functions from original script
+def format_float(val):
+    return "{:.9f}".format(float(val)).rstrip('0').rstrip('.')
+
 def get_signal_layers(stackup_data):
     signal_layers = []
     for i, layer in enumerate(stackup_data['rows']):
@@ -69,12 +72,16 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
                 if 'nodule_radius' in override_params: d['nodule_radius'] = f"{override_params['nodule_radius']}um"
 
         else:
-            d['dk'] = float(l_data.get('dk', 1))
-            d['df'] = float(l_data.get('df', 0))
+            dk_val = float(l_data.get('dk', 1))
+            df_val = float(l_data.get('df', 0))
             
             if override_params:
-                if 'dk' in override_params: d['dk'] = override_params['dk']
-                if 'df' in override_params: d['df'] = override_params['df']
+                if 'dk' in override_params: dk_val = override_params['dk']
+                if 'df' in override_params: df_val = override_params['df']
+            
+            d['dk'] = format_float(dk_val)
+            d['df'] = format_float(df_val)
+            d['material_name'] = f"mat_{l_data['layername']}"
         
         return d
 
@@ -449,6 +456,10 @@ class CharacterizationEngine:
             while iteration_count < self.max_iter:
                 error = objective(current_x)
                 
+                # Calculate deviations
+                z_dev = (target_z - current_metrics[0]) / target_z
+                s21_dev = (target_loss - current_metrics[1]) / abs(target_loss)
+
                 # Check convergence
                 z_error_percent = abs(z_dev)
                 loss_error_percent = abs(s21_dev)
@@ -527,10 +538,15 @@ class CharacterizationEngine:
             success = False
 
         # Final stats update
-        stats['status'] = "Done" if best_error < 0.05 else "Max Iter" # Simple threshold
-        if iteration_count >= self.max_iter: stats['status'] = "Max Iter"
+        # Final stats update
+        if success:
+            stats['status'] = "Done" if best_error < 0.05 else "Max Iter" # Simple threshold
+            if iteration_count >= self.max_iter: stats['status'] = "Max Iter"
+            self.log(f"[{layer_name}] Finished. Best Z={best_metrics[0]:.2f}, Best Loss={best_metrics[1]:.2f}")
+        else:
+            stats['status'] = "Failed"
+            self.log(f"[{layer_name}] Failed: {msg}")
         
         self.update_stats(layer_name, stats)
-        self.log(f"[{layer_name}] Finished. Best Z={best_metrics[0]:.2f}, Best Loss={best_metrics[1]:.2f}")
         
         return dict(zip(keys, best_x))
