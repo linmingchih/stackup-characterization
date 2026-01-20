@@ -4,6 +4,9 @@ import os
 from datetime import datetime
 from pyedb import Edb
 
+def format_float(val):
+    return "{:.9f}".format(float(val)).rstrip('0').rstrip('.')
+
 def load_config():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, "..", "config.json")
@@ -18,16 +21,29 @@ def create_stackup_model(params):
     # Ensure output path is absolute or relative to cwd correctly
     edb = Edb(params["output_aedb_path"], version=edb_version)
 
-    for layer in params["layers"]:
+    signal_half = params.get("signal_half", "top")
+
+    for i, layer in enumerate(params["layers"]):
         if layer["type"] == "signal":
             nodule_radius = layer.get("nodule_radius", "2um")
             surface_ratio = layer.get("hallhuray_surface_ratio", 0.2)
             
+            fill_material = 'air'
+            if signal_half == 'top' and i > 0:
+                prev_layer = params["layers"][i - 1]
+                if prev_layer["type"] == "dielectric":
+                    fill_material = f"m_{format_float(prev_layer.get('dk', 1))}_{format_float(prev_layer.get('df', 0))}"
+            elif signal_half == 'bottom' and i < len(params["layers"]) - 1:
+                next_layer = params["layers"][i + 1]
+                if next_layer["type"] == "dielectric":
+                    fill_material = f"m_{format_float(next_layer.get('dk', 1))}_{format_float(next_layer.get('df', 0))}"
+
             signal_layer = edb.stackup.add_layer(layer_name=layer["layername"],
                                                  method="add_on_bottom",
                                                  layer_type='signal',
                                                  thickness=layer["thickness"],
                                                  material=layer["material"],
+                                                 fillMaterial=fill_material,
                                                  etch_factor=layer.get("etch_factor", 1.0),
                                                  enable_roughness=True) 
             
@@ -39,10 +55,11 @@ def create_stackup_model(params):
             signal_layer.side_hallhuray_surface_ratio = surface_ratio
         
         elif layer["type"] == "dielectric":
-            dk = layer["dk"]
-            df = layer["df"]
-            if f'm_{dk}_{df}' not in edb.materials.materials:
-                edb.materials.add_dielectric_material(name=f'm_{dk}_{df}', 
+            dk = format_float(layer["dk"])
+            df = format_float(layer["df"])
+            mat_name = f'm_{dk}_{df}'
+            if mat_name not in edb.materials.materials:
+                edb.materials.add_dielectric_material(name=mat_name, 
                                             permittivity=dk, 
                                             dielectric_loss_tangent=df)
             
@@ -50,7 +67,7 @@ def create_stackup_model(params):
                                   method="add_on_bottom",
                                   layer_type='dielectric',
                                   thickness=layer["thickness"],
-                                  material=f'm_{dk}_{df}')
+                                  material=mat_name)
             
     spacing_mil = params["trace_params"]['spacing_mil']
     width_mil = params["trace_params"]['width_mil']
@@ -102,22 +119,49 @@ def create_full_stackup(params):
     
     edb = Edb(output_path, version=edb_version)
     
+    # Pre-add all dielectric materials
     for layer in stackup_data['rows']:
+        if layer['type'] == 'dielectric':
+            dk = format_float(layer.get('dk', 1))
+            df = format_float(layer.get('df', 0))
+            mat_name = f'm_{dk}_{df}'
+            if mat_name not in edb.materials.materials:
+                edb.materials.add_dielectric_material(name=mat_name, permittivity=dk, dielectric_loss_tangent=df)
+
+    signal_indices = [idx for idx, l in enumerate(stackup_data['rows']) if l['type'] == 'conductor']
+    midpoint = len(signal_indices) // 2
+    
+    current_signal_count = 0
+    for i, layer in enumerate(stackup_data['rows']):
         layer_name = layer['layername']
         layer_type = layer['type']
         thickness = f"{layer['thickness']}mil"
         
         if layer_type == 'conductor':
-            material = "copper" # Default
+            material = "copper"
             etch_factor = float(layer.get('etchfactor', 0))
             surface_ratio = float(layer.get('hallhuray_surface_ratio', 0))
             nodule_radius = f"{layer.get('nodule_radius', 0)}um"
             
+            half = "top" if current_signal_count < midpoint else "bottom"
+            current_signal_count += 1
+            
+            fill_material = 'air'
+            if half == 'top' and i > 0:
+                prev_layer = stackup_data['rows'][i-1]
+                if prev_layer['type'] == 'dielectric':
+                    fill_material = f"m_{format_float(prev_layer.get('dk', 1))}_{format_float(prev_layer.get('df', 0))}"
+            elif half == 'bottom' and i < len(stackup_data['rows']) - 1:
+                next_layer = stackup_data['rows'][i+1]
+                if next_layer['type'] == 'dielectric':
+                    fill_material = f"m_{format_float(next_layer.get('dk', 1))}_{format_float(next_layer.get('df', 0))}"
+
             signal_layer = edb.stackup.add_layer(layer_name=layer_name,
                                                  method="add_on_bottom",
                                                  layer_type='signal',
                                                  thickness=thickness,
                                                  material=material,
+                                                 fillMaterial=fill_material,
                                                  etch_factor=etch_factor,
                                                  enable_roughness=True)
             
@@ -129,14 +173,9 @@ def create_full_stackup(params):
             signal_layer.side_hallhuray_surface_ratio = surface_ratio
             
         elif layer_type == 'dielectric':
-            dk = float(layer.get('dk', 1))
-            df = float(layer.get('df', 0))
+            dk = format_float(layer.get('dk', 1))
+            df = format_float(layer.get('df', 0))
             mat_name = f'm_{dk}_{df}'
-            
-            if mat_name not in edb.materials.materials:
-                edb.materials.add_dielectric_material(name=mat_name, 
-                                            permittivity=dk, 
-                                            dielectric_loss_tangent=df)
             
             edb.stackup.add_layer(layer_name=layer_name,
                                   method="add_on_bottom",

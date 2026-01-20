@@ -37,7 +37,7 @@ def extract_layer_params(stackup_data, layer_index):
         'diel_below': diel_below
     }
 
-def create_modeling_params(stackup_data, layer_params, current_values, output_aedb_path):
+def create_modeling_params(stackup_data, layer_params, current_values, output_aedb_path, signal_half):
     layer = layer_params['layer']
     diel_above = layer_params['diel_above']
     diel_below = layer_params['diel_below']
@@ -137,7 +137,8 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
         "target_layer": layer['layername'],
         "trace_params": trace_params,
         "ref_layers": ref_layers_list,
-        "layers": model_layers
+        "layers": model_layers,
+        "signal_half": signal_half
     }
 
 def save_json(data, json_path):
@@ -187,7 +188,8 @@ class CharacterizationEngine:
                 self.log(f"Skipping optimization for bottom layer {layer_name} (Symmetry enabled)")
                 continue
 
-            optimized_params = self.optimize_layer(idx)
+            signal_half = "top" if i < midpoint else "bottom"
+            optimized_params = self.optimize_layer(idx, signal_half)
             
             # Update data with optimized params
             layer = self.data['rows'][idx]
@@ -287,7 +289,7 @@ class CharacterizationEngine:
 
         self.log(f"Characterization complete. Saved to {final_json_path}")
 
-    def optimize_layer(self, layer_index):
+    def optimize_layer(self, layer_index, signal_half):
         layer_info = extract_layer_params(self.data, layer_index)
         layer = layer_info['layer']
         layer_name = layer['layername']
@@ -384,7 +386,7 @@ class CharacterizationEngine:
             temp_params_path = os.path.join(self.output_dir, f"params_{layer_name}_{iteration_count}.json")
             aedb_path = os.path.join(self.output_dir, f"sim_{layer_name}_{iteration_count}.aedb")
             
-            modeling_params = create_modeling_params(self.data, layer_info, current_vals, aedb_path)
+            modeling_params = create_modeling_params(self.data, layer_info, current_vals, aedb_path, signal_half)
             save_json(modeling_params, temp_params_path)
             
             # Run Modeling
