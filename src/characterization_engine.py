@@ -138,7 +138,8 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
         "trace_params": trace_params,
         "ref_layers": ref_layers_list,
         "layers": model_layers,
-        "signal_half": signal_half
+        "signal_half": signal_half,
+        "copper_conductivity": stackup_data.get('copper_conductivity', 5.8e7)
     }
 
 def save_json(data, json_path):
@@ -274,7 +275,8 @@ class CharacterizationEngine:
         full_stackup_params = {
             "mode": "full_stackup",
             "output_aedb_path": full_aedb_path,
-            "stackup_data": self.data
+            "stackup_data": self.data,
+            "copper_conductivity": self.data.get('copper_conductivity', 5.8e7)
         }
         temp_full_path = os.path.join(self.output_dir, "full_stackup_params.json")
         save_json(full_stackup_params, temp_full_path)

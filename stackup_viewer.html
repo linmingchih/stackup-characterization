@@ -162,6 +162,11 @@
       <input type="number" id="frequencyInput" min="0" step="0.1" value="5">
       <span>GHz</span>
     </label>
+    <label class="frequency-control" for="copperConductivityInput">
+      <span>Copper Conductivity</span>
+      <input type="number" id="copperConductivityInput" min="0" step="1e6" value="5.8e7">
+      <span>S/m</span>
+    </label>
     <button id="downloadBtn" disabled>Download JSON</button>
   </div>
   <div id="message"></div>
@@ -252,6 +257,7 @@
       const tableBody = document.getElementById('tableBody');
       const messageEl = document.getElementById('message');
       const frequencyInput = document.getElementById('frequencyInput');
+      const copperConductivityInput = document.getElementById('copperConductivityInput');
       const columns = ['layername', 'type', 'reference_layers', 'spacing', 'width', 'etchfactor', 'thickness', 'dk', 'impedance_target', 'df', 'hallhuray_surface_ratio', 'nodule_radius', 'loss_target'];
       const columnClassNames = {
         etchfactor: 'variation-col',
@@ -305,6 +311,11 @@
               // Update Frequency
               if (jsonData.frequency !== undefined) {
                 frequencyInput.value = jsonData.frequency;
+              }
+
+              // Update Copper Conductivity
+              if (jsonData.copper_conductivity !== undefined) {
+                copperConductivityInput.value = jsonData.copper_conductivity;
               }
 
               // Update Settings (Variations/Tolerances)
@@ -369,6 +380,7 @@
       downloadBtn.addEventListener('click', () => {
         const exportPayload = {
           frequency: getFrequencyValue(),
+          copper_conductivity: getCopperConductivityValue(),
           settings: columnSettings,
           rows: tableData
         };
@@ -626,6 +638,17 @@
         const parsed = parseFloat(frequencyInput.value);
         if (!Number.isFinite(parsed) || parsed < 0) {
           return 5;
+        }
+        return parsed;
+      }
+
+      function getCopperConductivityValue() {
+        if (!copperConductivityInput) {
+          return 5.8e7;
+        }
+        const parsed = parseFloat(copperConductivityInput.value);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          return 5.8e7;
         }
         return parsed;
       }

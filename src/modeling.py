@@ -21,6 +21,9 @@ def create_stackup_model(params):
     # Ensure output path is absolute or relative to cwd correctly
     edb = Edb(params["output_aedb_path"], version=edb_version)
 
+    copper_cond = params.get("copper_conductivity", 5.8e7)
+    edb.materials.add_conductor_material("my_copper", copper_cond)
+
     signal_half = params.get("signal_half", "top")
 
     for i, layer in enumerate(params["layers"]):
@@ -42,7 +45,7 @@ def create_stackup_model(params):
                                                  method="add_on_bottom",
                                                  layer_type='signal',
                                                  thickness=layer["thickness"],
-                                                 material=layer["material"],
+                                                 material="my_copper",
                                                  fillMaterial=fill_material,
                                                  etch_factor=layer.get("etch_factor", 1.0),
                                                  enable_roughness=True) 
@@ -119,6 +122,9 @@ def create_full_stackup(params):
     
     edb = Edb(output_path, version=edb_version)
     
+    copper_cond = params.get("copper_conductivity", 5.8e7)
+    edb.materials.add_conductor_material("my_copper", copper_cond)
+    
     # Pre-add all dielectric materials
     for layer in stackup_data['rows']:
         if layer['type'] == 'dielectric':
@@ -138,7 +144,7 @@ def create_full_stackup(params):
         thickness = f"{layer['thickness']}mil"
         
         if layer_type == 'conductor':
-            material = "copper"
+            material = "my_copper"
             etch_factor = float(layer.get('etchfactor', 0))
             surface_ratio = float(layer.get('hallhuray_surface_ratio', 0))
             nodule_radius = f"{layer.get('nodule_radius', 0)}um"
