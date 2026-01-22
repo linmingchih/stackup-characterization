@@ -26,20 +26,42 @@ def create_stackup_model(params):
 
     signal_half = params.get("signal_half", "top")
 
+    # Pre-add all dielectric materials from the layers list
+    for layer in params["layers"]:
+        if layer["type"] == "dielectric":
+            dk = format_float(layer.get("dk", 1))
+            df = format_float(layer.get("df", 0))
+            mat_name = f'm_{dk}_{df}'
+            if mat_name not in edb.materials.materials:
+                edb.materials.add_dielectric_material(name=mat_name, 
+                                            permittivity=dk, 
+                                            dielectric_loss_tangent=df)
+
     for i, layer in enumerate(params["layers"]):
         if layer["type"] == "signal":
             nodule_radius = layer.get("nodule_radius", "2um")
             surface_ratio = layer.get("hallhuray_surface_ratio", 0.2)
             
             fill_material = 'air'
+            # The characterized dielectric is the one that fills the signal layer
             if signal_half == 'top' and i > 0:
+                # Top half uses dielectric above for characterization
                 prev_layer = params["layers"][i - 1]
                 if prev_layer["type"] == "dielectric":
                     fill_material = f"m_{format_float(prev_layer.get('dk', 1))}_{format_float(prev_layer.get('df', 0))}"
             elif signal_half == 'bottom' and i < len(params["layers"]) - 1:
+                # Bottom half uses dielectric below for characterization
                 next_layer = params["layers"][i + 1]
                 if next_layer["type"] == "dielectric":
                     fill_material = f"m_{format_float(next_layer.get('dk', 1))}_{format_float(next_layer.get('df', 0))}"
+            elif signal_half == 'mid' or True:
+                # Fallback: search for nearest
+                if i > 0 and params["layers"][i-1]['type'] == 'dielectric':
+                     l_data = params["layers"][i-1]
+                     fill_material = f"m_{format_float(l_data.get('dk', 1))}_{format_float(l_data.get('df', 0))}"
+                elif i < len(params["layers"]) - 1 and params["layers"][i+1]['type'] == 'dielectric':
+                     l_data = params["layers"][i+1]
+                     fill_material = f"m_{format_float(l_data.get('dk', 1))}_{format_float(l_data.get('df', 0))}"
 
             signal_layer = edb.stackup.add_layer(layer_name=layer["layername"],
                                                  method="add_on_bottom",
@@ -61,10 +83,6 @@ def create_stackup_model(params):
             dk = format_float(layer["dk"])
             df = format_float(layer["df"])
             mat_name = f'm_{dk}_{df}'
-            if mat_name not in edb.materials.materials:
-                edb.materials.add_dielectric_material(name=mat_name, 
-                                            permittivity=dk, 
-                                            dielectric_loss_tangent=df)
             
             edb.stackup.add_layer(layer_name=layer["layername"],
                                   method="add_on_bottom",
@@ -153,14 +171,22 @@ def create_full_stackup(params):
             current_signal_count += 1
             
             fill_material = 'air'
-            if half == 'top' and i > 0:
-                prev_layer = stackup_data['rows'][i-1]
-                if prev_layer['type'] == 'dielectric':
-                    fill_material = f"m_{format_float(prev_layer.get('dk', 1))}_{format_float(prev_layer.get('df', 0))}"
-            elif half == 'bottom' and i < len(stackup_data['rows']) - 1:
-                next_layer = stackup_data['rows'][i+1]
-                if next_layer['type'] == 'dielectric':
-                    fill_material = f"m_{format_float(next_layer.get('dk', 1))}_{format_float(next_layer.get('df', 0))}"
+            if half == 'top':
+                 # During characterization of top layers, the dielectric above is the one varied/used.
+                 # Search upwards for nearest dielectric to use as fill.
+                for j in range(i - 1, -1, -1):
+                    if stackup_data['rows'][j]['type'] == 'dielectric':
+                        l_data = stackup_data['rows'][j]
+                        fill_material = f"m_{format_float(l_data.get('dk', 1))}_{format_float(l_data.get('df', 0))}"
+                        break
+            else:
+                # During characterization of bottom layers, the dielectric below is the one varied/used.
+                # Search downwards for nearest dielectric to use as fill.
+                for j in range(i + 1, len(stackup_data['rows'])):
+                    if stackup_data['rows'][j]['type'] == 'dielectric':
+                        l_data = stackup_data['rows'][j]
+                        fill_material = f"m_{format_float(l_data.get('dk', 1))}_{format_float(l_data.get('df', 0))}"
+                        break
 
             signal_layer = edb.stackup.add_layer(layer_name=layer_name,
                                                  method="add_on_bottom",

@@ -22,16 +22,29 @@ def get_signal_layers(stackup_data):
 def extract_layer_params(stackup_data, layer_index):
     rows = stackup_data['rows']
     layer = rows[layer_index]
-    diel_above_idx = layer_index - 1
-    diel_below_idx = layer_index + 1
     
-    diel_above = rows[diel_above_idx] if diel_above_idx >= 0 and rows[diel_above_idx]['type'] == 'dielectric' else None
-    diel_below = rows[diel_below_idx] if diel_below_idx < len(rows) and rows[diel_below_idx]['type'] == 'dielectric' else None
+    # Search upwards for the nearest dielectric
+    diel_above = None
+    diel_above_idx = None
+    for j in range(layer_index - 1, -1, -1):
+        if rows[j]['type'] == 'dielectric':
+            diel_above = rows[j]
+            diel_above_idx = j
+            break
+            
+    # Search downwards for the nearest dielectric
+    diel_below = None
+    diel_below_idx = None
+    for j in range(layer_index + 1, len(rows)):
+        if rows[j]['type'] == 'dielectric':
+            diel_below = rows[j]
+            diel_below_idx = j
+            break
     
     return {
         'layer_index': layer_index,
-        'diel_above_index': diel_above_idx if diel_above else None,
-        'diel_below_index': diel_below_idx if diel_below else None,
+        'diel_above_index': diel_above_idx,
+        'diel_below_index': diel_below_idx,
         'layer': layer,
         'diel_above': diel_above,
         'diel_below': diel_below
