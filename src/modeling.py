@@ -2,6 +2,7 @@ import sys
 import json
 import os
 from datetime import datetime
+import xml.etree.ElementTree as ET
 from pyedb import Edb
 
 def format_float(val):
@@ -14,6 +15,25 @@ def load_config():
         with open(config_path, 'r') as f:
             return json.load(f)
     return {}
+
+def post_process_xml(xml_path):
+    if not os.path.exists(xml_path):
+        return
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        modified = False
+        for elem in root.iter():
+            ratio = elem.get('HallHuraySurfaceRatio')
+            radius = elem.get('NoduleRadius')
+            if ratio is not None and radius is not None:
+                elem.set('HallHuraySurfaceRatio', radius)
+                elem.set('NoduleRadius', ratio)
+                modified = True
+        if modified:
+            tree.write(xml_path, encoding='utf-8', xml_declaration=True)
+    except Exception as e:
+        print(f"Error post-processing XML: {e}")
 
 def create_stackup_model(params):
     config = load_config()
@@ -217,7 +237,9 @@ def create_full_stackup(params):
                                   material=mat_name)
 
     edb.save()
-    edb.stackup.export(f'{params["output_aedb_path"]}/full_stackup.xml', include_material_with_layer=True)
+    xml_output = f'{params["output_aedb_path"]}/full_stackup.xml'
+    edb.stackup.export(xml_output, include_material_with_layer=True)
+    post_process_xml(xml_output)
 
     edb.close_edb()
 
