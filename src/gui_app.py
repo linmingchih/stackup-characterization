@@ -22,7 +22,7 @@ class StackupAPI:
         result = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False, file_types=file_types)
         return result[0] if result else None
 
-    def start_optimization(self, json_path, max_iter, symmetry=False):
+    def start_optimization(self, json_path, max_iter, symmetry=False, max_delta_s=0.02, freq_stop=5):
         if self.running:
             return {"status": "error", "message": "Optimization already running"}
         
@@ -31,8 +31,10 @@ class StackupAPI:
 
         try:
             max_iter = int(max_iter)
+            max_delta_s = float(max_delta_s)
+            freq_stop = float(freq_stop)
         except ValueError:
-            return {"status": "error", "message": "Invalid max iterations value"}
+            return {"status": "error", "message": "Invalid parameter values"}
 
         self.running = True
         self.stats = {} # Reset stats
@@ -46,13 +48,13 @@ class StackupAPI:
             return {"status": "error", "message": f"Failed to load JSON: {str(e)}"}
 
         # Start thread
-        thread = threading.Thread(target=self._run_engine, args=(json_data, max_iter, json_path, symmetry))
+        thread = threading.Thread(target=self._run_engine, args=(json_data, max_iter, json_path, symmetry, max_delta_s, freq_stop))
         thread.daemon = True
         thread.start()
         
         return {"status": "success", "message": "Optimization started"}
 
-    def _run_engine(self, json_data, max_iter, original_path, symmetry):
+    def _run_engine(self, json_data, max_iter, original_path, symmetry, max_delta_s, freq_stop):
         def log_callback(msg):
             if self.window:
                 # Escape quotes for JS
@@ -68,7 +70,9 @@ class StackupAPI:
             # Determine output directory based on original file
             output_base_dir = os.path.dirname(original_path)
             
-            self.engine = CharacterizationEngine(json_data, max_iter, log_callback, stats_callback, output_base_dir=output_base_dir, symmetry=symmetry)
+            self.engine = CharacterizationEngine(json_data, max_iter, log_callback, stats_callback, 
+                                               output_base_dir=output_base_dir, symmetry=symmetry,
+                                               max_delta_s=max_delta_s, freq_stop=freq_stop)
             self.engine.run()
             
             log_callback("Optimization Process Completed.")

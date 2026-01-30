@@ -50,7 +50,7 @@ def extract_layer_params(stackup_data, layer_index):
         'diel_below': diel_below
     }
 
-def create_modeling_params(stackup_data, layer_params, current_values, output_aedb_path, signal_half):
+def create_modeling_params(stackup_data, layer_params, current_values, output_aedb_path, signal_half, max_delta_s=0.02, freq_stop=5):
     layer = layer_params['layer']
     diel_above = layer_params['diel_above']
     diel_below = layer_params['diel_below']
@@ -147,6 +147,8 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
     return {
         "output_aedb_path": output_aedb_path,
         "frequency": stackup_data['frequency'],
+        "max_delta_s": max_delta_s,
+        "freq_stop": freq_stop,
         "target_layer": layer['layername'],
         "trace_params": trace_params,
         "ref_layers": ref_layers_list,
@@ -160,12 +162,14 @@ def save_json(data, json_path):
         json.dump(data, f, indent=2)
 
 class CharacterizationEngine:
-    def __init__(self, json_data, max_iter, log_callback=None, stats_callback=None, output_base_dir=None, symmetry=False):
+    def __init__(self, json_data, max_iter, log_callback=None, stats_callback=None, output_base_dir=None, symmetry=False, max_delta_s=0.02, freq_stop=5):
         self.data = json_data
         self.max_iter = max_iter
         self.log_callback = log_callback
         self.stats_callback = stats_callback
         self.symmetry = symmetry
+        self.max_delta_s = max_delta_s
+        self.freq_stop = freq_stop
         
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         base = output_base_dir if output_base_dir else os.getcwd()
@@ -401,7 +405,8 @@ class CharacterizationEngine:
             temp_params_path = os.path.join(self.output_dir, f"params_{layer_name}_{iteration_count}.json")
             aedb_path = os.path.join(self.output_dir, f"sim_{layer_name}_{iteration_count}.aedb")
             
-            modeling_params = create_modeling_params(self.data, layer_info, current_vals, aedb_path, signal_half)
+            modeling_params = create_modeling_params(self.data, layer_info, current_vals, aedb_path, signal_half,
+                                                   max_delta_s=self.max_delta_s, freq_stop=self.freq_stop)
             save_json(modeling_params, temp_params_path)
             
             # Run Modeling

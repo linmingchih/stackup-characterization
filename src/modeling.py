@@ -122,9 +122,10 @@ def create_stackup_model(params):
     setup = edb.create_hfss_setup()
     setup.set_solution_single_frequency(frequency=f'{params["frequency"]}GHz', 
                                         max_num_passes=20, 
-                                        max_delta_s=0.02)
+                                        max_delta_s=params.get("max_delta_s", 0.02))
 
-    frequency_range = [["linear scale", "50MHz", "5GHz", '50MHz']]                                        
+    freq_stop = params.get("freq_stop", 5)
+    frequency_range = [["linear scale", "50MHz", f"{freq_stop}GHz", '50MHz']]                                        
     setup.add_sweep('sweep', frequency_set=frequency_range)
 
 
