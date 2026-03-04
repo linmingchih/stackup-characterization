@@ -75,6 +75,35 @@ class StackupAPI:
                                                max_delta_s=max_delta_s, freq_stop=freq_stop)
             self.engine.run()
             
+            # Export self.stats to CSV with original layer order
+            try:
+                csv_path = os.path.join(self.engine.output_dir, "gui_results_table.csv")
+                import csv
+                from characterization_engine import get_signal_layers
+                
+                with open(csv_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Layer", "Status", "Iter", "Target Z", "Best Z", "Target Loss", "Best Loss", "Time"])
+                    
+                    signal_indices = get_signal_layers(json_data)
+                    for idx in signal_indices:
+                        layer_name = json_data['rows'][idx]['layername']
+                        layer_stats = self.stats.get(layer_name, {})
+                        
+                        writer.writerow([
+                            layer_name, 
+                            layer_stats.get('status', 'Pending'),
+                            layer_stats.get('iterations', '-'),
+                            layer_stats.get('target_z', '-'),
+                            layer_stats.get('best_z', '-'),
+                            layer_stats.get('target_loss', '-'),
+                            layer_stats.get('best_loss', '-'),
+                            layer_stats.get('time_elapsed', '-')
+                        ])
+                log_callback(f"Results table exported to {os.path.basename(csv_path)}")
+            except Exception as e:
+                log_callback(f"Failed to export results table: {str(e)}")
+            
             log_callback("Optimization Process Completed.")
             if self.window:
                 self.window.evaluate_js("optimizationComplete()")
