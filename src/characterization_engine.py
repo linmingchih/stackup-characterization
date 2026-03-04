@@ -512,20 +512,23 @@ class CharacterizationEngine:
                     # Z Correlations (Dk, Thickness, Etch Factor)
                     if update_z_params:
                         if 'thickness' in k:
-                            # Positive correlation: Increase thickness to increase Z
-                            step += param_range * z_dev * learning_rate
+                            # Negative correlation: Decrease thickness to increase Z
+                            step -= param_range * z_dev * learning_rate
                         elif 'dk' in k:
                             # Negative correlation: Decrease Dk to increase Z
                             step -= param_range * z_dev * learning_rate
                         elif 'etch_factor' in k:
-                            # Negative correlation: Decrease Etch Factor (more trapezoidal) to increase Z
-                            step -= param_range * z_dev * learning_rate
+                            # Negative correlation with absolute value: Decrease |Etch Factor| to increase Z
+                            if initial_etch_sign > 0:
+                                step -= param_range * z_dev * learning_rate
+                            else:
+                                step += param_range * z_dev * learning_rate
                         
                     # Loss Correlations (Df, Roughness)
                     if update_loss_params:
                         # Loss (attenuation) is positive with Df, Roughness.
                         # S21 is negative with Df, Roughness.
-                        # If s21_dev > 0 (need more S21), we need to decrease Df/Roughness.
+                        # If s21_dev > 0 (need more S21 / less loss), we need to decrease Df/Roughness.
                         if 'df' in k:
                             step -= param_range * s21_dev * learning_rate
                         elif 'hallhuray_surface_ratio' in k or 'nodule_radius' in k:
