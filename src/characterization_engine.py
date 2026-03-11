@@ -301,7 +301,7 @@ class CharacterizationEngine:
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([sys.executable, modeling_script, temp_full_path], check=True)
+            subprocess.run([sys.executable, modeling_script, temp_full_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW)
             self.log(f"Full stackup created at {full_aedb_path}")
         except Exception as e:
             self.log(f"Failed to create full stackup: {e}")
@@ -379,24 +379,26 @@ class CharacterizationEngine:
         # Tracking best
         best_error = float('inf')
         best_x = x0
-        best_error = float('inf')
-        best_x = x0
         best_metrics = (0, 0) # z, loss
         current_metrics = (0, 0)
         
         iteration_count = 0
+        evaluated_history = []  # To cache objective evaluations and avoid duplicates
+
 
         def objective(x):
-            nonlocal iteration_count, best_error, best_x, best_metrics, current_metrics
+            nonlocal iteration_count, best_error, best_x, best_metrics, current_metrics, evaluated_history
             
             # Check max iter
             if iteration_count >= self.max_iter:
-                # Force stop by raising error or returning huge value?
-                # Scipy minimize doesn't stop easily.
-                # We can just return best_error to discourage moving?
-                # Or raise StopIteration?
-                # Let's just return a large value, but we need to ensure we don't overwrite best.
                 return best_error + 1000 
+
+            # Check cache to avoid duplicate simulations
+            for past_x, past_metrics, past_error in evaluated_history:
+                # If parameters are virtually identical
+                if all(abs(a - b) < 1e-6 for a, b in zip(x, past_x)):
+                    current_metrics = past_metrics
+                    return past_error
 
             iteration_count += 1
             current_vals = dict(zip(keys, x))
@@ -413,12 +415,12 @@ class CharacterizationEngine:
             self.log(f"[{layer_name}] Iter {iteration_count}: Modeling...")
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([sys.executable, modeling_script, temp_params_path], check=True)
+            subprocess.run([sys.executable, modeling_script, temp_params_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW)
             
             # Run Simulation
             self.log(f"[{layer_name}] Iter {iteration_count}: Simulating...")
             simulation_script = os.path.join(script_dir, "simulation.py")
-            result = subprocess.run([sys.executable, simulation_script, aedb_path], capture_output=True, text=True, check=True)
+            result = subprocess.run([sys.executable, simulation_script, aedb_path], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
             
             zdiff = 0
             dbs21 = 0
@@ -464,6 +466,7 @@ class CharacterizationEngine:
             stats['time_elapsed'] = f"{int(time.time() - start_time)}s"
             self.update_stats(layer_name, stats)
             
+            evaluated_history.append((list(x), current_metrics, total_error))
             return total_error
 
         # Custom optimization loop using sequential phases
@@ -478,158 +481,172 @@ class CharacterizationEngine:
         loss_indices = [i for i, k in enumerate(keys) if k in loss_param_keys]
 
         try:
-            # Phase 1: Impedance Optimization
-            self.log(f"[{layer_name}] Phase 1: Impedance Optimization")
-            z_improvement_stopped = False
+            outer_improvement = True
             
-            # Initial evaluation
-            _ = objective(current_x)
-            
-            while iteration_count < self.max_iter and not z_improvement_stopped:
-                z_dev = (target_z - current_metrics[0]) / target_z
-                z_error_percent = abs(z_dev)
+            while iteration_count < self.max_iter and outer_improvement:
+                outer_improvement = False
                 
-                if z_error_percent <= z_tol_percent:
-                    self.log(f"[{layer_name}] Impedance converged! Z err: {z_error_percent:.2%}")
-                    break
+                # Phase 1: Impedance Optimization
+                self.log(f"[{layer_name}] Phase 1: Impedance Optimization")
+                z_improvement_stopped = False
                 
-                self.log(f"[{layer_name}] Z Error: {z_error_percent:.2%} - Target: {target_z}, Current: {current_metrics[0]:.2f}")
+                # Initial evaluation
+                _ = objective(current_x)
                 
-                improved_in_pass = False
-                prev_z_error = z_error_percent
-                
-                # Try adjusting each Z parameter one by one
-                for i in z_indices:
-                    if iteration_count >= self.max_iter:
-                        break
-                        
-                    k = keys[i]
-                    val = current_x[i]
-                    lower_bound, upper_bound = bounds[i]
-                    param_range = upper_bound - lower_bound
+                while iteration_count < self.max_iter and not z_improvement_stopped:
+                    z_dev = (target_z - current_metrics[0]) / target_z
+                    z_error_percent = abs(z_dev)
                     
-                    step = 0
-                    if 'thickness' in k:
-                        step -= param_range * z_dev * learning_rate
-                    elif 'dk' in k:
-                        step -= param_range * z_dev * learning_rate
-                    elif 'etch_factor' in k:
-                        if initial_etch_sign > 0:
+                    if z_error_percent <= z_tol_percent:
+                        self.log(f"[{layer_name}] Impedance converged! Z err: {z_error_percent:.2%}")
+                        break
+                    
+                    self.log(f"[{layer_name}] Z Error: {z_error_percent:.2%} - Target: {target_z}, Current: {current_metrics[0]:.2f}")
+                    
+                    improved_in_pass = False
+                    prev_z_error = z_error_percent
+                    
+                    # Try adjusting each Z parameter one by one
+                    for i in z_indices:
+                        if iteration_count >= self.max_iter:
+                            break
+                            
+                        k = keys[i]
+                        val = current_x[i]
+                        lower_bound, upper_bound = bounds[i]
+                        param_range = upper_bound - lower_bound
+                        
+                        step = 0
+                        if 'thickness' in k:
                             step -= param_range * z_dev * learning_rate
-                        else:
-                            step += param_range * z_dev * learning_rate
+                        elif 'dk' in k:
+                            step -= param_range * z_dev * learning_rate
+                        elif 'etch_factor' in k:
+                            if initial_etch_sign > 0:
+                                step -= param_range * z_dev * learning_rate
+                            else:
+                                step += param_range * z_dev * learning_rate
+                                
+                        if step == 0:
+                            continue
                             
-                    if step == 0:
-                        continue
+                        # Create proposed new state
+                        test_x = list(current_x)
+                        test_x[i] += step
                         
-                    # Create proposed new state
-                    test_x = list(current_x)
-                    test_x[i] += step
-                    
-                    # Clamp
-                    test_x[i] = max(lower_bound, min(upper_bound, test_x[i]))
-                    if 'etch_factor' in k:
-                        if initial_etch_sign > 0:
-                            test_x[i] = max(test_x[i], 0.001)
+                        # Clamp
+                        test_x[i] = max(lower_bound, min(upper_bound, test_x[i]))
+                        if 'etch_factor' in k:
+                            if initial_etch_sign > 0:
+                                test_x[i] = max(test_x[i], 0.001)
+                            else:
+                                test_x[i] = min(test_x[i], -0.001)
+                        elif 'dk' in k:
+                            test_x[i] = max(test_x[i], 1.0)
                         else:
-                            test_x[i] = min(test_x[i], -0.001)
-                    elif 'dk' in k:
-                        test_x[i] = max(test_x[i], 1.0)
-                    else:
-                        test_x[i] = max(test_x[i], 0.000001)
-                        
-                    # Evaluate change
-                    if abs(test_x[i] - current_x[i]) > 1e-6:
-                        self.log(f"[{layer_name}] Testing {k} change...")
-                        _ = objective(test_x)
-                        new_z_dev = (target_z - current_metrics[0]) / target_z
-                        new_z_error = abs(new_z_dev)
-                        
-                        if new_z_error < prev_z_error:
-                            # Keep change
-                            current_x = test_x
-                            prev_z_error = new_z_error
-                            z_dev = new_z_dev # Update dev for next param calculations
-                            improved_in_pass = True
-                            self.log(f"[{layer_name}] Kept {k} change. New Z err: {new_z_error:.2%}")
-                            if new_z_error <= z_tol_percent:
-                                break
-                        else:
-                            self.log(f"[{layer_name}] Discarded {k} change.")
-                
-                if not improved_in_pass:
-                    self.log(f"[{layer_name}] Impedance improvement stopped.")
-                    z_improvement_stopped = True
-
-            # Phase 2: Loss Optimization
-            self.log(f"[{layer_name}] Phase 2: Loss Optimization")
-            loss_improvement_stopped = False
-            
-            # Re-evaluate current state if iteration advanced (optional, but objective is already latest for current_x except if discarded last change, wait, if discarded, current_metrics corresponds to test_x! We must re-eval current_x to restore current_metrics)
-            _ = objective(current_x)
-
-            while iteration_count < self.max_iter and not loss_improvement_stopped:
-                s21_dev = (target_loss - current_metrics[1]) / abs(target_loss)
-                loss_error_percent = abs(s21_dev)
-                
-                if loss_error_percent <= loss_tol_percent:
-                    self.log(f"[{layer_name}] Loss converged! Loss err: {loss_error_percent:.2%}")
-                    break
+                            test_x[i] = max(test_x[i], 0.000001)
+                            
+                        # Evaluate change
+                        if abs(test_x[i] - current_x[i]) > 1e-6:
+                            self.log(f"[{layer_name}] Testing {k} change...")
+                            _ = objective(test_x)
+                            new_z_dev = (target_z - current_metrics[0]) / target_z
+                            new_z_error = abs(new_z_dev)
+                            
+                            if new_z_error < prev_z_error:
+                                # Keep change
+                                current_x = test_x
+                                prev_z_error = new_z_error
+                                z_dev = new_z_dev # Update dev for next param calculations
+                                improved_in_pass = True
+                                outer_improvement = True
+                                self.log(f"[{layer_name}] Kept {k} change. New Z err: {new_z_error:.2%}")
+                                if new_z_error <= z_tol_percent:
+                                    break
+                            else:
+                                self.log(f"[{layer_name}] Discarded {k} change.")
                     
-                self.log(f"[{layer_name}] Loss Error: {loss_error_percent:.2%} - Target: {target_loss}, Current: {current_metrics[1]:.2f}")
+                    if not improved_in_pass:
+                        self.log(f"[{layer_name}] Impedance improvement stopped.")
+                        z_improvement_stopped = True
+
+                # Phase 2: Loss Optimization
+                self.log(f"[{layer_name}] Phase 2: Loss Optimization")
+                loss_improvement_stopped = False
                 
-                improved_in_pass = False
-                prev_loss_error = loss_error_percent
-                
-                # Try adjusting each Loss parameter one by one
-                for i in loss_indices:
-                    if iteration_count >= self.max_iter:
+                # Re-evaluate current state if iteration advanced (optional, but objective is already latest for current_x except if discarded last change, wait, if discarded, current_metrics corresponds to test_x! We must re-eval current_x to restore current_metrics)
+                _ = objective(current_x)
+
+                while iteration_count < self.max_iter and not loss_improvement_stopped:
+                    s21_dev = (target_loss - current_metrics[1]) / abs(target_loss)
+                    loss_error_percent = abs(s21_dev)
+                    
+                    if loss_error_percent <= loss_tol_percent:
+                        self.log(f"[{layer_name}] Loss converged! Loss err: {loss_error_percent:.2%}")
                         break
                         
-                    k = keys[i]
-                    val = current_x[i]
-                    lower_bound, upper_bound = bounds[i]
-                    param_range = upper_bound - lower_bound
+                    self.log(f"[{layer_name}] Loss Error: {loss_error_percent:.2%} - Target: {target_loss}, Current: {current_metrics[1]:.2f}")
                     
-                    # Positive dev means we need more S21 (less loss). So we decrease Df/Roughness.
-                    step = -param_range * s21_dev * learning_rate
+                    improved_in_pass = False
+                    prev_loss_error = loss_error_percent
                     
-                    if step == 0:
-                        continue
-                        
-                    # Create proposed new state
-                    test_x = list(current_x)
-                    test_x[i] += step
-                    
-                    # Clamp
-                    test_x[i] = max(lower_bound, min(upper_bound, test_x[i]))
-                    test_x[i] = max(test_x[i], 0.000001)
-                        
-                    # Evaluate change
-                    if abs(test_x[i] - current_x[i]) > 1e-6:
-                        self.log(f"[{layer_name}] Testing {k} change...")
-                        _ = objective(test_x)
-                        new_s21_dev = (target_loss - current_metrics[1]) / abs(target_loss)
-                        new_loss_error = abs(new_s21_dev)
-                        
-                        if new_loss_error < prev_loss_error:
-                            # Keep change
-                            current_x = test_x
-                            prev_loss_error = new_loss_error
-                            s21_dev = new_s21_dev # Update dev for next param calculations
-                            improved_in_pass = True
-                            self.log(f"[{layer_name}] Kept {k} change. New Loss err: {new_loss_error:.2%}")
-                            if new_loss_error <= loss_tol_percent:
-                                break
-                        else:
-                            self.log(f"[{layer_name}] Discarded {k} change.")
+                    # Try adjusting each Loss parameter one by one
+                    for i in loss_indices:
+                        if iteration_count >= self.max_iter:
+                            break
                             
-                if not improved_in_pass:
-                    self.log(f"[{layer_name}] Loss improvement stopped.")
-                    loss_improvement_stopped = True
-                    
-            # Ensure final state metrics are correct before exiting loop phase
-            _ = objective(current_x)
+                        k = keys[i]
+                        val = current_x[i]
+                        lower_bound, upper_bound = bounds[i]
+                        param_range = upper_bound - lower_bound
+                        
+                        # Positive dev means we need more S21 (less loss). So we decrease Df/Roughness.
+                        step = -param_range * s21_dev * learning_rate
+                        
+                        if step == 0:
+                            continue
+                            
+                        # Create proposed new state
+                        test_x = list(current_x)
+                        test_x[i] += step
+                        
+                        # Clamp
+                        test_x[i] = max(lower_bound, min(upper_bound, test_x[i]))
+                        test_x[i] = max(test_x[i], 0.000001)
+                            
+                        # Evaluate change
+                        if abs(test_x[i] - current_x[i]) > 1e-6:
+                            self.log(f"[{layer_name}] Testing {k} change...")
+                            _ = objective(test_x)
+                            new_s21_dev = (target_loss - current_metrics[1]) / abs(target_loss)
+                            new_loss_error = abs(new_s21_dev)
+                            
+                            if new_loss_error < prev_loss_error:
+                                # Keep change
+                                current_x = test_x
+                                prev_loss_error = new_loss_error
+                                s21_dev = new_s21_dev # Update dev for next param calculations
+                                improved_in_pass = True
+                                outer_improvement = True
+                                self.log(f"[{layer_name}] Kept {k} change. New Loss err: {new_loss_error:.2%}")
+                                if new_loss_error <= loss_tol_percent:
+                                    break
+                            else:
+                                self.log(f"[{layer_name}] Discarded {k} change.")
+                                
+                    if not improved_in_pass:
+                        self.log(f"[{layer_name}] Loss improvement stopped.")
+                        loss_improvement_stopped = True
+                        
+                # Ensure final state metrics are correct before exiting loop phase
+                _ = objective(current_x)
+                
+                # Check convergence
+                z_error_percent = abs((target_z - current_metrics[0]) / target_z)
+                loss_error_percent = abs((target_loss - current_metrics[1]) / abs(target_loss))
+                if z_error_percent <= z_tol_percent and loss_error_percent <= loss_tol_percent:
+                    self.log(f"[{layer_name}] Both Impedance and Loss converged!")
+                    break
             
             msg = "Optimization finished"
             success = True
