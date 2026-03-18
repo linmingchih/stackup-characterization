@@ -5,7 +5,6 @@ import subprocess
 import csv
 import time
 from datetime import datetime
-from scipy.optimize import minimize
 import shutil
 
 # Helper functions from original script
@@ -179,7 +178,7 @@ class CharacterizationEngine:
         self.log_file = os.path.join(self.output_dir, "characterization_log.csv")
         with open(self.log_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["iteration", "layer", "width", "spacing", "thickness", "etch_factor", "hallhuray_surface_ratio", "nodule_radius", "dk_up", "dk_down", "df_up", "df_down", "Zdiff", "S21", "pass?"])
+            writer.writerow(["iteration", "layer", "phase", "tuning_param", "width", "spacing", "thickness", "etch_factor", "hallhuray_surface_ratio", "nodule_radius", "dk_up", "dk_down", "df_up", "df_down", "Zdiff", "S21", "z_pass", "loss_pass"])
 
     def log(self, msg):
         print(msg)
@@ -349,9 +348,13 @@ class CharacterizationEngine:
         keys = list(initial_values.keys())
         x0 = [initial_values[k] for k in keys]
         
-        # Bounds
+        # Bounds with physical constraints:
+        #   - thickness, dk, df, hallhuray_surface_ratio, nodule_radius must be > 0
+        #   - etch_factor must keep the same sign as the initial input value
         settings = self.data['settings']
         bounds = []
+        initial_etch_sign = 1.0 if initial_values.get('etch_factor', 1) >= 0 else -1.0
+        
         for k in keys:
             val = initial_values[k]
             variation = 0.2
@@ -365,40 +368,48 @@ class CharacterizationEngine:
             lower = val * (1 - variation) if val > 0 else val * (1 + variation)
             upper = val * (1 + variation) if val > 0 else val * (1 - variation)
             if lower > upper: lower, upper = upper, lower
-            bounds.append((lower, upper))
             
-        # Capture initial signs for Etch Factor constraint
-        initial_etch_sign = 1.0
-        if 'etch_factor' in initial_values:
-            initial_etch_sign = 1.0 if initial_values['etch_factor'] >= 0 else -1.0
+            # Apply physical constraints
+            if 'etch_factor' in k:
+                # Etch factor must keep same sign as input
+                if initial_etch_sign < 0:
+                    upper = min(upper, -1e-9)  # Must stay negative
+                else:
+                    lower = max(lower, 1e-9)   # Must stay positive
+            elif 'dk' in k:
+                # Dielectric constant must be >= 1
+                lower = max(lower, 1.0)
+            else:
+                # thickness, df, hallhuray_surface_ratio, nodule_radius must be > 0
+                lower = max(lower, 1e-9)
+            
+            bounds.append((lower, upper))
 
         # Tolerances
         z_tol_percent = float(settings['impedance_target']['tolerance'].strip('%')) / 100
         loss_tol_percent = float(settings['loss_target']['tolerance'].strip('%')) / 100
 
-        # Tracking best
-        best_error = float('inf')
-        best_x = x0
-        best_metrics = (0, 0) # z, loss
-        current_metrics = (0, 0)
+        # Current metrics from the latest simulation
+        current_metrics = (0, 0)  # (zdiff, dbs21)
         
         iteration_count = 0
         evaluated_history = []  # To cache objective evaluations and avoid duplicates
+        current_phase = "impedance"  # Track which phase we are in
+        current_tuning_param = ""  # Track which parameter is being tuned
 
-
-        def objective(x):
-            nonlocal iteration_count, best_error, best_x, best_metrics, current_metrics, evaluated_history
+        def run_simulation_eval(x):
+            """Run modeling + simulation for parameter vector x. Returns (zdiff, dbs21)."""
+            nonlocal iteration_count, current_metrics, evaluated_history
             
             # Check max iter
             if iteration_count >= self.max_iter:
-                return best_error + 1000 
+                return current_metrics
 
             # Check cache to avoid duplicate simulations
-            for past_x, past_metrics, past_error in evaluated_history:
-                # If parameters are virtually identical
+            for past_x, past_metrics in evaluated_history:
                 if all(abs(a - b) < 1e-6 for a, b in zip(x, past_x)):
                     current_metrics = past_metrics
-                    return past_error
+                    return current_metrics
 
             iteration_count += 1
             current_vals = dict(zip(keys, x))
@@ -435,39 +446,34 @@ class CharacterizationEngine:
             
             current_metrics = (zdiff, dbs21)
 
-            z_error = abs(zdiff - target_z) / target_z
-            loss_error = abs(dbs21 - target_loss) / abs(target_loss)
-            # Prioritize Target Z over Target Loss
-            total_error = 5.0 * z_error + loss_error
-            
-            # Update Best
-            if total_error < best_error:
-                best_error = total_error
-                best_x = x
-                best_metrics = (zdiff, dbs21)
+            z_error_pct = abs(zdiff - target_z) / target_z
+            loss_error_pct = abs(dbs21 - target_loss) / abs(target_loss) if target_loss != 0 else 0
+            z_pass = z_error_pct <= z_tol_percent
+            loss_pass = loss_error_pct <= loss_tol_percent
             
             # Log to CSV
             with open(self.log_file, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 row = [
-                    iteration_count, layer_name, layer['width'], layer['spacing'],
+                    iteration_count, layer_name, current_phase, current_tuning_param,
+                    layer['width'], layer['spacing'],
                     current_vals.get('thickness', ''), current_vals.get('etch_factor', ''),
                     current_vals.get('hallhuray_surface_ratio', ''), current_vals.get('nodule_radius', ''),
                     current_vals.get('dk_up', ''), current_vals.get('dk_down', ''),
                     current_vals.get('df_up', ''), current_vals.get('df_down', ''),
-                    zdiff, dbs21, total_error < 0.02
+                    zdiff, dbs21, z_pass, loss_pass
                 ]
                 writer.writerow(row)
             
             # Update Stats
             stats['iterations'] = iteration_count
-            stats['best_z'] = best_metrics[0]
-            stats['best_loss'] = best_metrics[1]
+            stats['best_z'] = zdiff
+            stats['best_loss'] = dbs21
             stats['time_elapsed'] = f"{int(time.time() - start_time)}s"
             self.update_stats(layer_name, stats)
             
-            evaluated_history.append((list(x), current_metrics, total_error))
-            return total_error
+            evaluated_history.append((list(x), current_metrics))
+            return current_metrics
 
         # Custom optimization loop using binary search based on prompt rules
         current_x = list(x0)
@@ -501,11 +507,13 @@ class CharacterizationEngine:
             # All loss params UP -> Loss UP -> S21 DOWN (more negative S21). Return -1.
             return -1
 
-        # Intial Sim
-        _ = objective(current_x)
+        # Initial Simulation
+        current_tuning_param = "initial"
+        run_simulation_eval(current_x)
         
         try:
             # Phase 1: Impedance Optimization
+            current_phase = "impedance"
             z_err = abs((target_z - current_metrics[0]) / target_z)
             if z_err > z_tol_percent:
                 self.log(f"[{layer_name}] Phase 1: Impedance Optimization")
@@ -515,11 +523,14 @@ class CharacterizationEngine:
                     if not p_indices: continue
                     p_idx = p_indices[0]
                     bound_min, bound_max = bounds[p_idx]
-                    if bound_min == bound_max: continue # Variation = 0%
+                    if bound_min == bound_max:
+                        self.log(f"[{layer_name}] Skipping {p_name}: variation=0%")
+                        continue
                         
                     z_err = abs((target_z - current_metrics[0]) / target_z)
                     if z_err <= z_tol_percent: break
                     
+                    current_tuning_param = p_name
                     need_z_up = target_z > current_metrics[0]
                     p_dir = get_param_z_dir(p_name, current_x[p_idx])
                     need_param_up = (need_z_up and p_dir > 0) or (not need_z_up and p_dir < 0)
@@ -528,12 +539,14 @@ class CharacterizationEngine:
                     R_val = bound_max if need_param_up else bound_min
                     
                     # 1. Test Boundary (First step for this parameter)
+                    self.log(f"[{layer_name}] Tuning {p_name}: current={L_val:.6f}, boundary={R_val:.6f} ({'up' if need_param_up else 'down'})")
                     test_x = list(current_x)
                     for i in p_indices: test_x[i] = R_val
-                    _ = objective(test_x)
+                    run_simulation_eval(test_x)
                     
                     z_err = abs((target_z - current_metrics[0]) / target_z)
                     if z_err <= z_tol_percent:
+                        self.log(f"[{layer_name}] {p_name} at boundary met Z tolerance")
                         current_x = test_x
                         break
                         
@@ -542,25 +555,27 @@ class CharacterizationEngine:
                     new_need_param_up = (new_need_z_up and new_p_dir > 0) or (not new_need_z_up and new_p_dir < 0)
                     
                     if new_need_param_up == need_param_up:
-                        self.log(f"[{layer_name}] {p_name} hit boundary, moving to next.")
-                        current_x = test_x # Keep at boundary and move on
+                        self.log(f"[{layer_name}] {p_name} hit boundary ({R_val:.6f}) but Z still not met, moving to next param.")
+                        current_x = test_x  # Keep at boundary and move on
                         continue
                         
-                    # 2. Binary Search
-                    self.log(f"[{layer_name}] {p_name} overshot, starting binary search.")
+                    # 2. Binary Search (bisection between previous value and boundary)
+                    self.log(f"[{layer_name}] {p_name} overshot at boundary, starting bisection.")
                     val_need_up = L_val if need_param_up else R_val
                     val_need_down = R_val if need_param_up else L_val
                     
-                    for _ in range(10): # Max 10 bs steps per param
+                    for _ in range(10):  # Max 10 bisection steps per param
                         if iteration_count >= self.max_iter: break
                         mid = (val_need_up + val_need_down) / 2
+                        self.log(f"[{layer_name}] {p_name} bisection: midpoint={mid:.6f} (range [{val_need_up:.6f}, {val_need_down:.6f}])")
                         test_bs = list(current_x)
                         for i in p_indices: test_bs[i] = mid
-                        _ = objective(test_bs)
+                        run_simulation_eval(test_bs)
                         
                         z_err = abs((target_z - current_metrics[0]) / target_z)
                         if z_err <= z_tol_percent:
                             current_x = test_bs
+                            self.log(f"[{layer_name}] {p_name} bisection converged: Z tolerance met")
                             break
                             
                         curr_need_z_up = target_z > current_metrics[0]
@@ -576,75 +591,88 @@ class CharacterizationEngine:
                     if z_err <= z_tol_percent: break
 
             # Phase 2: Loss Optimization
-            # Note: The prompt says "當進入loss優化後,阻抗tolerance就不再考慮是否符合"
-            # It also says: "在開始loss優化時,判斷是否符合loss tolerance,如果符合loss tolerance則模擬結束"
-            loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
-            if loss_err > loss_tol_percent:
-                self.log(f"[{layer_name}] Phase 2: Loss Optimization")
-                for p_name, p_keys in loss_params:
-                    if iteration_count >= self.max_iter: break
-                    p_indices = get_indices(p_keys)
-                    if not p_indices: continue
-                    p_idx = p_indices[0]
-                    bound_min, bound_max = bounds[p_idx]
-                    if bound_min == bound_max: continue # Variation = 0%
-                        
-                    loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
-                    if loss_err <= loss_tol_percent: break
-                    
-                    # Target depends on S21
-                    need_s21_up = target_loss > current_metrics[1] # e.g. -2 > -3, need S21 to increase (less loss)
-                    p_dir = get_param_s21_dir(p_name)
-                    need_param_up = (need_s21_up and p_dir > 0) or (not need_s21_up and p_dir < 0)
-                    
-                    L_val = current_x[p_idx]
-                    R_val = bound_max if need_param_up else bound_min
-                    
-                    # 1. Test Boundary
-                    test_x = list(current_x)
-                    for i in p_indices: test_x[i] = R_val
-                    _ = objective(test_x)
-                    
-                    loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
-                    if loss_err <= loss_tol_percent:
-                        current_x = test_x
-                        break
-                        
-                    new_need_s21_up = target_loss > current_metrics[1]
-                    new_need_param_up = (new_need_s21_up and p_dir > 0) or (not new_need_s21_up and p_dir < 0)
-                    
-                    if new_need_param_up == need_param_up:
-                        self.log(f"[{layer_name}] {p_name} hit boundary, moving to next.")
-                        current_x = test_x
-                        continue
-                        
-                    # 2. Binary Search
-                    self.log(f"[{layer_name}] {p_name} overshot, starting binary search.")
-                    val_need_up = L_val if need_param_up else R_val
-                    val_need_down = R_val if need_param_up else L_val
-                    
-                    for _ in range(10):
+            # Spec: "當進入loss優化後,阻抗tolerance就不再考慮是否符合"
+            # Spec: "在開始loss優化時,判斷是否符合loss tolerance,如果符合loss tolerance則模擬結束"
+            current_phase = "loss"
+            if target_loss == 0:
+                self.log(f"[{layer_name}] Loss target is 0, skipping loss optimization.")
+            else:
+                loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
+                if loss_err > loss_tol_percent:
+                    self.log(f"[{layer_name}] Phase 2: Loss Optimization (Z tolerance no longer checked)")
+                    for p_name, p_keys in loss_params:
                         if iteration_count >= self.max_iter: break
-                        mid = (val_need_up + val_need_down) / 2
-                        test_bs = list(current_x)
-                        for i in p_indices: test_bs[i] = mid
-                        _ = objective(test_bs)
+                        p_indices = get_indices(p_keys)
+                        if not p_indices: continue
+                        p_idx = p_indices[0]
+                        bound_min, bound_max = bounds[p_idx]
+                        if bound_min == bound_max:
+                            self.log(f"[{layer_name}] Skipping {p_name}: variation=0%")
+                            continue
+                            
+                        loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
+                        if loss_err <= loss_tol_percent: break
+                        
+                        current_tuning_param = p_name
+                        # S21 is in dB (negative). target_loss > current means need less loss (S21 toward 0).
+                        need_s21_up = target_loss > current_metrics[1]
+                        p_dir = get_param_s21_dir(p_name)
+                        need_param_up = (need_s21_up and p_dir > 0) or (not need_s21_up and p_dir < 0)
+                        
+                        L_val = current_x[p_idx]
+                        R_val = bound_max if need_param_up else bound_min
+                        
+                        # 1. Test Boundary
+                        self.log(f"[{layer_name}] Tuning {p_name}: current={L_val:.6f}, boundary={R_val:.6f} ({'up' if need_param_up else 'down'})")
+                        test_x = list(current_x)
+                        for i in p_indices: test_x[i] = R_val
+                        run_simulation_eval(test_x)
                         
                         loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
                         if loss_err <= loss_tol_percent:
-                            current_x = test_bs
+                            self.log(f"[{layer_name}] {p_name} at boundary met loss tolerance")
+                            current_x = test_x
                             break
                             
-                        curr_need_s21_up = target_loss > current_metrics[1]
-                        curr_need_param_up = (curr_need_s21_up and p_dir > 0) or (not curr_need_s21_up and p_dir < 0)
+                        new_need_s21_up = target_loss > current_metrics[1]
+                        new_need_param_up = (new_need_s21_up and p_dir > 0) or (not new_need_s21_up and p_dir < 0)
                         
-                        if curr_need_param_up:
-                            val_need_up = mid
-                        else:
-                            val_need_down = mid
-                        current_x = test_bs
+                        if new_need_param_up == need_param_up:
+                            self.log(f"[{layer_name}] {p_name} hit boundary ({R_val:.6f}) but loss still not met, moving to next param.")
+                            current_x = test_x
+                            continue
                             
-                    if loss_err <= loss_tol_percent: break
+                        # 2. Binary Search
+                        self.log(f"[{layer_name}] {p_name} overshot at boundary, starting bisection.")
+                        val_need_up = L_val if need_param_up else R_val
+                        val_need_down = R_val if need_param_up else L_val
+                        
+                        for _ in range(10):
+                            if iteration_count >= self.max_iter: break
+                            mid = (val_need_up + val_need_down) / 2
+                            self.log(f"[{layer_name}] {p_name} bisection: midpoint={mid:.6f} (range [{val_need_up:.6f}, {val_need_down:.6f}])")
+                            test_bs = list(current_x)
+                            for i in p_indices: test_bs[i] = mid
+                            run_simulation_eval(test_bs)
+                            
+                            loss_err = abs((target_loss - current_metrics[1]) / abs(target_loss))
+                            if loss_err <= loss_tol_percent:
+                                current_x = test_bs
+                                self.log(f"[{layer_name}] {p_name} bisection converged: loss tolerance met")
+                                break
+                                
+                            curr_need_s21_up = target_loss > current_metrics[1]
+                            curr_need_param_up = (curr_need_s21_up and p_dir > 0) or (not curr_need_s21_up and p_dir < 0)
+                            
+                            if curr_need_param_up:
+                                val_need_up = mid
+                            else:
+                                val_need_down = mid
+                            current_x = test_bs
+                                
+                        if loss_err <= loss_tol_percent: break
+                else:
+                    self.log(f"[{layer_name}] Loss already within tolerance, skipping Phase 2.")
 
             msg = "Optimization finished"
             success = True
@@ -653,15 +681,27 @@ class CharacterizationEngine:
             success = False
 
         # Final stats update
-        # Final stats update
+        final_z = current_metrics[0]
+        final_loss = current_metrics[1]
+        z_converged = abs(final_z - target_z) / target_z <= z_tol_percent if target_z != 0 else True
+        loss_converged = abs(final_loss - target_loss) / abs(target_loss) <= loss_tol_percent if target_loss != 0 else True
+        
         if success:
-            stats['status'] = "Done" if best_error < 0.05 else "Max Iter" # Simple threshold
-            if iteration_count >= self.max_iter: stats['status'] = "Max Iter"
-            self.log(f"[{layer_name}] Finished. Best Z={best_metrics[0]:.2f}, Best Loss={best_metrics[1]:.2f}")
+            if z_converged and loss_converged:
+                stats['status'] = "Done"
+            elif iteration_count >= self.max_iter:
+                stats['status'] = "Max Iter"
+            else:
+                stats['status'] = "Done (partial)"
+            self.log(f"[{layer_name}] Finished. Z={final_z:.2f} (target={target_z:.2f}, {'PASS' if z_converged else 'FAIL'}), "
+                     f"Loss={final_loss:.2f} (target={target_loss}, {'PASS' if loss_converged else 'FAIL'})")
         else:
             stats['status'] = "Failed"
             self.log(f"[{layer_name}] Failed: {msg}")
         
+        stats['best_z'] = final_z
+        stats['best_loss'] = final_loss
         self.update_stats(layer_name, stats)
         
-        return dict(zip(keys, best_x))
+        # Return the last converged parameter set (not a global-best weighted set)
+        return dict(zip(keys, current_x))

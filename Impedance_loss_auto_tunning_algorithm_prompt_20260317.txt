@@ -1,0 +1,61 @@
+ptimization Algorithm Logic
+1. 先進行 Impedance 優化
+Impedance 優化涉及三個參數 Algorithm Logic：
+(1) Etch Factor
+•	Etch Factor 的絕對值變大 → Impedance 變小
+•	Etch Factor 的絕對值變小 → Impedance 變大
+(2) DK
+•	DK 變大 → Impedance 變小
+•	DK 變小 → Impedance 變大
+(3) Thickness
+•	Thickness 變大 → Impedance 變大
+•	Thickness 變小 → Impedance 變小
+
+Impedance 優化規則
+•	每次只調整一個優化參數
+•	不同參數 不可同時調整
+•	優化參數調整後需重新計算 Impedance,如果模擬阻抗未達impedance tolerance,依照阻抗Algorithm Logic,判斷是否繼續優化參數或更換下一個優化參數
+•	第1次iteration先模擬計算初始Impedance並判斷是否符合impedance tolerance,如果符合impedance tolerance則進入Loss 優化,如果不符合impedance tolerance則在下一次iteration繼續調整阻抗優化參數
+•	調整阻抗參數依續設定是Etch Factor/DK/Thickness
+•	在每次iteration而且首次優化Etch Factor/DK/Thickness時,都依照使用者設定的variation設定阻抗參數的最大值或最小值
+•	阻抗參數設定最大值或最小值是依照阻抗Algorithm Logic來判斷,例如:如果模擬阻抗小於目標阻抗,而且首次優化Etch Factor參數時,依照阻抗Algorithm Logic,則設定Etch Factor=-abs(2.5-(2.5*0.5))=-1.25,使用者初始設定etch_factor=-2.5(variation 50%)
+•	每次iteration模擬阻抗,都會判斷impedance tolerance是否符合
+•	如果優化的Etch Factor/DK/Thickness己經設定最大值或最小值,模擬阻抗仍不符合impedance tolerance,則依照阻抗Algorithm Logic判斷下一次的參數可能設定是否超出優化參數最大值或最小值
+	如果可能的參數設定超出最大值或最小值則換下一個優化的Etch Factor/DK/Thickness設定,如果阻抗Algorithm Logic判斷參數設定沒有超出最大值或最小值則下一次iteration的Etch Factor/DK/Thickness設定
+	會是此次優化參數與前1次優化參數的平均
+•	如果阻抗參數的variation=0%則不考慮此參數優化
+•	每次iteration模擬阻抗,非首次優化的參數Etch Factor/DK/Thickness,則優化的參數Etch Factor/DK/Thickness設定會是此上一次優化參數與上上一次優化參數的平均
+•	dk_up和dk_down當成同1個參數同時變化,如果dk_up和dk_down不同值則取平均
+
+
+
+2. 再進行 Loss 優化
+Loss 優化涉及三個參數：
+(1) Df
+•	Df 變大 → Loss 變大
+•	Df 變小 → Loss 變小
+(2) HallHuray Surface Ratio
+•	HallHuray Surface Ratio 變大 → Loss 變大
+•	HallHuray Surface Ratio 變小 → Loss 變小
+(3) Nodule Radius
+•	Nodule Radius 變大 → Loss 變大
+•	Nodule Radius 變小 → Loss 變小
+Loss 優化規則
+•	每次只調整一個優化參數
+•	不同參數 不可同時調整
+•	在Impedance 優化期間,當模擬阻抗符合impedance tolerance時則進入loss優化,在相同的iteration同時計算模擬LOSS是否符合loss tolerance.
+•	LOSS優化和阻抗優化相似
+•	優化參數調整後需重新計算loss,如果模擬loss未達loss tolerance,依照loss Algorithm Logic,判斷是否繼續優化參數或更換下一個優化參數
+•	在開始loss優化時,判斷是否符合loss tolerance,如果符合loss tolerance則模擬結束,如果不符合loss tolerance則在下一次iteration繼續調整loss優化參數
+•	調整loss參數依續設定是Df/HallHuray Surface Ratio/Nodule Radius
+•	在每次iteration而且首次優化Df/HallHuray Surface Ratio/Nodule Radius時,都依照使用者設定的variation設定阻抗參數的最大值或最小值
+•	loss參數設定最大值或最小值是依照阻抗Algorithm Logic來判斷,例如:如果模擬loss小於目標阻抗,而且首次優化df參數時,依照loss Algorithm Logic,則設定df=0.013(1+0.2)=0.0156,使用者初始設定df=0.013(variation 20%)
+•	每次iteration模擬loss,都會判斷loss tolerance是否符合
+•	如果優化的Df/HallHuray Surface Ratio/Nodule Radius己經設定最大值或最小值,模擬loss仍不符合loss tolerance,則依照loss Algorithm Logic判斷下一次的參數可能設定是否超出優化參數最大值或最小值
+	如果可能的參數設定超出最大值或最小值則換下一個優化的Df/HallHuray Surface Ratio/Nodule Radius設定,如果loss Algorithm Logic判斷參數設定沒有超出最大值或最小值則
+	下一次iteration的Df/HallHuray Surface Ratio/Nodule Radius設定會是此次優化參數與前1次優化參數的平均
+•	如果loss參數的variation=0%則不考慮此參數優化
+•	每次iteration模擬loss,非首次優化的參數iteration的Df/HallHuray Surface Ratio/Nodule Radius,則下次優化的參數Etch Factor/DK/Thickness設定會是此次優化參數與前1次優化參數的平均
+•	df_up和df_down當成同1個參數同時變化,如果df_up和df_down不同值則取平均
+•	當進入loss優化後,阻抗tolerance就不再考慮是否符合
+
