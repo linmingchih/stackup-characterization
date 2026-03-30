@@ -8,6 +8,12 @@ from datetime import datetime
 import shutil
 
 # Helper functions from original script
+def _hidden_startupinfo():
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = subprocess.SW_HIDE
+    return si
+
 def format_float(val):
     return "{:.9f}".format(float(val)).rstrip('0').rstrip('.')
 
@@ -300,7 +306,7 @@ class CharacterizationEngine:
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([sys.executable, modeling_script, temp_full_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run([sys.executable, modeling_script, temp_full_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
             self.log(f"Full stackup created at {full_aedb_path}")
         except Exception as e:
             self.log(f"Failed to create full stackup: {e}")
@@ -426,12 +432,12 @@ class CharacterizationEngine:
             self.log(f"[{layer_name}] Iter {iteration_count}: Modeling...")
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([sys.executable, modeling_script, temp_params_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run([sys.executable, modeling_script, temp_params_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
             
             # Run Simulation
             self.log(f"[{layer_name}] Iter {iteration_count}: Simulating...")
             simulation_script = os.path.join(script_dir, "simulation.py")
-            result = subprocess.run([sys.executable, simulation_script, aedb_path], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            result = subprocess.run([sys.executable, simulation_script, aedb_path], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
             
             zdiff = 0
             dbs21 = 0
