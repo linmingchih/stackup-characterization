@@ -17,6 +17,12 @@ def _hidden_startupinfo():
 def format_float(val):
     return "{:.9f}".format(float(val)).rstrip('0').rstrip('.')
 
+def safe_float(val, default=0):
+    """Convert value to float, returning default if value is empty string or None."""
+    if val is None or val == '':
+        return default
+    return float(val)
+
 def get_signal_layers(stackup_data):
     signal_layers = []
     for i, layer in enumerate(stackup_data['rows']):
@@ -69,7 +75,7 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
         d = {
             "layername": l_data['layername'],
             "type": "signal" if l_data['type'] == 'conductor' else "dielectric",
-            "thickness": f"{l_data['thickness']}mil",
+            "thickness": f"{safe_float(l_data.get('thickness', 0))}mil",
         }
         
         if override_params:
@@ -80,9 +86,9 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
 
         if d['type'] == 'signal':
             d['material'] = "copper"
-            d['etch_factor'] = float(l_data.get('etchfactor', 0))
-            d['hallhuray_surface_ratio'] = float(l_data.get('hallhuray_surface_ratio', 0))
-            d['nodule_radius'] = f"{l_data.get('nodule_radius', 0)}um"
+            d['etch_factor'] = safe_float(l_data.get('etchfactor'), 0)
+            d['hallhuray_surface_ratio'] = safe_float(l_data.get('hallhuray_surface_ratio'), 0)
+            d['nodule_radius'] = f"{safe_float(l_data.get('nodule_radius'), 0)}um"
             
             if override_params:
                 if 'etch_factor' in override_params: d['etch_factor'] = override_params['etch_factor']
@@ -90,8 +96,8 @@ def create_modeling_params(stackup_data, layer_params, current_values, output_ae
                 if 'nodule_radius' in override_params: d['nodule_radius'] = f"{override_params['nodule_radius']}um"
 
         else:
-            dk_val = float(l_data.get('dk', 1))
-            df_val = float(l_data.get('df', 0))
+            dk_val = safe_float(l_data.get('dk'), 1)
+            df_val = safe_float(l_data.get('df'), 0)
             
             if override_params:
                 if 'dk' in override_params: dk_val = override_params['dk']
@@ -337,19 +343,19 @@ class CharacterizationEngine:
         start_time = time.time()
 
         initial_values = {
-            'thickness': float(layer['thickness']),
-            'etch_factor': float(layer['etchfactor']),
-            'hallhuray_surface_ratio': float(layer['hallhuray_surface_ratio']),
-            'nodule_radius': float(layer['nodule_radius']),
+            'thickness': safe_float(layer['thickness']),
+            'etch_factor': safe_float(layer['etchfactor']),
+            'hallhuray_surface_ratio': safe_float(layer['hallhuray_surface_ratio']),
+            'nodule_radius': safe_float(layer['nodule_radius']),
         }
         
         if layer_info['diel_above']:
-            initial_values['dk_up'] = float(layer_info['diel_above']['dk'])
-            initial_values['df_up'] = float(layer_info['diel_above']['df'])
+            initial_values['dk_up'] = safe_float(layer_info['diel_above']['dk'], 1)
+            initial_values['df_up'] = safe_float(layer_info['diel_above']['df'])
             
         if layer_info['diel_below']:
-            initial_values['dk_down'] = float(layer_info['diel_below']['dk'])
-            initial_values['df_down'] = float(layer_info['diel_below']['df'])
+            initial_values['dk_down'] = safe_float(layer_info['diel_below']['dk'], 1)
+            initial_values['df_down'] = safe_float(layer_info['diel_below']['df'])
             
         keys = list(initial_values.keys())
         x0 = [initial_values[k] for k in keys]
