@@ -1,0 +1,4 @@
+pyaedt>=0.22.2
+pyedb>=0.1.0
+pywebview>=6.1
+scipy>=1.10.0

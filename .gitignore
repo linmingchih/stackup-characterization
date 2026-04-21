@@ -1,10 +1,7 @@
 /tmp
 /data
-/tests/__pycache__
-/__pycache__
-batch.log
-
-/stackup_characterization_20251214_084943
-/stackup_characterization_20251214_090300
-/src/__pycache__
+__pycache__/
 *.pyc
+batch.log
+/cases
+/.venv
