@@ -8,3 +8,5 @@ batch.log
 /stackup_characterization_20251214_090300
 /src/__pycache__
 *.pyc
+/.venv
+/cases

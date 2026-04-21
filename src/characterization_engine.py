@@ -8,6 +8,18 @@ from datetime import datetime
 import shutil
 
 # Helper functions from original script
+def _get_python_exe():
+    """Get the python.exe path, even when launched via pythonw.exe.
+    
+    When the GUI is started with pythonw.exe, sys.executable points to pythonw.exe
+    which suppresses stdout/stderr. Subprocess calls need the console python.exe
+    to properly capture output and report errors.
+    """
+    exe = sys.executable
+    if exe.lower().endswith('pythonw.exe'):
+        exe = exe[:-len('pythonw.exe')] + 'python.exe'
+    return exe
+
 def _hidden_startupinfo():
     si = subprocess.STARTUPINFO()
     si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -312,7 +324,7 @@ class CharacterizationEngine:
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([sys.executable, modeling_script, temp_full_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
+            subprocess.run([_get_python_exe(), modeling_script, temp_full_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
             self.log(f"Full stackup created at {full_aedb_path}")
         except Exception as e:
             self.log(f"Failed to create full stackup: {e}")
@@ -438,12 +450,18 @@ class CharacterizationEngine:
             self.log(f"[{layer_name}] Iter {iteration_count}: Modeling...")
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([sys.executable, modeling_script, temp_params_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
+            subprocess.run([_get_python_exe(), modeling_script, temp_params_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
             
             # Run Simulation
             self.log(f"[{layer_name}] Iter {iteration_count}: Simulating...")
             simulation_script = os.path.join(script_dir, "simulation.py")
-            result = subprocess.run([sys.executable, simulation_script, aedb_path], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
+            result = subprocess.run([_get_python_exe(), simulation_script, aedb_path], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
+            if result.returncode != 0:
+                err_msg = result.stderr.strip() if result.stderr else "No stderr"
+                out_msg = result.stdout.strip() if result.stdout else "No stdout"
+                self.log(f"[{layer_name}] simulation.py STDERR:\n{err_msg}")
+                self.log(f"[{layer_name}] simulation.py STDOUT:\n{out_msg}")
+                raise RuntimeError(f"simulation.py failed (exit code {result.returncode})")
             
             zdiff = 0
             dbs21 = 0
