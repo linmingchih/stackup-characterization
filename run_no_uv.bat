@@ -9,7 +9,7 @@ REM Check if .venv exists, create if not
 if not exist ".venv\Scripts\python.exe" (
     echo Creating virtual environment with Python 3.10...
     REM Try py launcher first (matches .python-version = 3.10)
-    py -3.10 -m venv .venv 2>nul
+    python -m venv .venv 2>nul
     if %ERRORLEVEL% NEQ 0 (
         echo Python 3.10 not found via py launcher. Trying python3.10...
         python3.10 -m venv .venv 2>nul
