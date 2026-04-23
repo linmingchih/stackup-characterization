@@ -324,8 +324,20 @@ class CharacterizationEngine:
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([_get_python_exe(), modeling_script, temp_full_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
-            self.log(f"Full stackup created at {full_aedb_path}")
+            result = subprocess.run(
+                [_get_python_exe(), modeling_script, temp_full_path],
+                capture_output=True, text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                startupinfo=_hidden_startupinfo()
+            )
+            if result.returncode != 0:
+                err_msg = result.stderr.strip() if result.stderr else "No stderr"
+                out_msg = result.stdout.strip() if result.stdout else "No stdout"
+                self.log(f"Full stackup modeling.py STDERR:\n{err_msg}")
+                self.log(f"Full stackup modeling.py STDOUT:\n{out_msg}")
+                self.log(f"Failed to create full stackup (exit code {result.returncode})")
+            else:
+                self.log(f"Full stackup created at {full_aedb_path}")
         except Exception as e:
             self.log(f"Failed to create full stackup: {e}")
 
