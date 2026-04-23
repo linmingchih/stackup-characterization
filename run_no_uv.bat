@@ -5,7 +5,7 @@ cd /d "%~dp0"
 REM Add current directory to PATH
 set "PATH=%~dp0;%PATH%"
 
-REM ── Step 1: Determine Python 3.10 executable ──────────────────────────
+REM - Step 1: Determine Python 3.10 executable -
 set "PYTHON_EXE="
 
 REM Check default python version
@@ -60,7 +60,7 @@ if not defined PYTHON_EXE (
     echo Using Python 3.10 from: !PYTHON_EXE!
 )
 
-REM ── Step 2: Create .venv if it doesn't exist ──────────────────────────
+REM - Step 2: Create .venv if it doesn't exist -
 if not exist ".venv\Scripts\python.exe" (
     echo Creating virtual environment with Python 3.10...
     "!PYTHON_EXE!" -m venv .venv
@@ -71,24 +71,24 @@ if not exist ".venv\Scripts\python.exe" (
     )
 )
 
-REM ── Step 3: Upgrade pip ────────────────────────────────────────────────
+REM - Step 3: Upgrade pip -
 echo Upgrading pip...
 ".venv\Scripts\python.exe" -m pip install --upgrade pip
-if %ERRORLEVEL% NEQ 0 (
+if !ERRORLEVEL! NEQ 0 (
     echo Failed to upgrade pip.
     pause
     exit /b 1
 )
 
-REM ── Step 4: Install requirements ───────────────────────────────────────
+REM - Step 4: Install requirements -
 echo Installing requirements...
 ".venv\Scripts\pip.exe" install -r requirements.txt
-if %ERRORLEVEL% NEQ 0 (
+if !ERRORLEVEL! NEQ 0 (
     echo pip install failed.
     pause
     exit /b 1
 )
 
-REM ── Step 5: Run application ────────────────────────────────────────────
+REM - Step 5: Run application -
 echo Starting application...
 start "" ".venv\Scripts\pythonw.exe" src\gui_app.py
