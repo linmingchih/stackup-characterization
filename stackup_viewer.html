@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -270,6 +270,7 @@
         loss_target: 'tolerance-col'
       };
       let tableData = [];
+      let uploadedFileName = 'stackup_layers';
       const headerControlConfigs = [
         { id: 'etchFactorVariationInput', columnKey: 'etchfactor', settingKey: 'variation', defaultValue: 20 },
         { id: 'thicknessVariationInput', columnKey: 'thickness', settingKey: 'variation', defaultValue: 20 },
@@ -301,6 +302,7 @@
           return;
         }
         const file = fileInput.files[0];
+        uploadedFileName = file.name.replace(/\.[^.]+$/, '');
         const reader = new FileReader();
 
         reader.onload = () => {
@@ -388,7 +390,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'stackup_layers.json';
+        link.download = uploadedFileName + '.json';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
