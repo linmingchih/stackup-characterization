@@ -114,6 +114,11 @@ class StackupAPI:
             traceback.print_exc()
         finally:
             self.running = False
+            if self.window:
+                try:
+                    self.window.evaluate_js("resetOptimizationUI()")
+                except Exception:
+                    pass
 
     def get_statistics(self):
         return self.stats
@@ -187,7 +192,14 @@ def main():
         # Try to find it relative to cwd
         template_path = os.path.join(os.getcwd(), 'templates', 'index.html')
 
-    window = webview.create_window('Stackup Characterization Tool', url=template_path, js_api=api, width=1000, height=800)
+    window = webview.create_window(
+        'Stackup Characterization Tool',
+        url=template_path,
+        js_api=api,
+        width=1360,
+        height=820,
+        min_size=(980, 640),
+    )
     api.set_window(window)
     webview.start(debug=False)
 
