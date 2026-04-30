@@ -140,6 +140,7 @@ def create_stackup_model(params):
     #edb.excitations['port1'].deembed_length = '-990mil'
 
     setup = edb.create_hfss_setup()
+    setup.adaptive_settings.min_converged_passes = 2
     setup.set_solution_single_frequency(frequency=f'{params["frequency"]}GHz', 
                                         max_num_passes=20, 
                                         max_delta_s=params.get("max_delta_s", 0.02))
