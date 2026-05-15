@@ -7,6 +7,7 @@ set "PATH=%~dp0;%PATH%"
 
 REM - Step 1: Determine Python 3.10 executable -
 set "PYTHON_EXE="
+set "RECREATE_VENV="
 
 REM Check default python version
 for /f "tokens=2 delims= " %%v in ('python --version 2^>nul') do set "PY_VER=%%v"
@@ -60,7 +61,39 @@ if not defined PYTHON_EXE (
     echo Using Python 3.10 from: !PYTHON_EXE!
 )
 
+REM - Step 1.5: Validate existing .venv against the selected/base Python -
+if exist ".venv\pyvenv.cfg" (
+    for /f "tokens=1,* delims==" %%A in (.venv\pyvenv.cfg) do (
+        if /i "%%~A"=="home " set "VENV_HOME=%%~B"
+    )
+
+    if defined VENV_HOME (
+        for /f "tokens=* delims= " %%A in ("!VENV_HOME!") do set "VENV_HOME=%%~A"
+        if not exist "!VENV_HOME!\python.exe" (
+            echo Existing .venv references missing base Python: !VENV_HOME!\python.exe
+            set "RECREATE_VENV=1"
+        )
+    )
+)
+
+if defined USER_PYTHON if exist ".venv\pyvenv.cfg" (
+    for %%I in ("!USER_PYTHON!") do set "SELECTED_PYTHON_HOME=%%~dpI"
+    if defined SELECTED_PYTHON_HOME (
+        if "!SELECTED_PYTHON_HOME:~-1!"=="\" set "SELECTED_PYTHON_HOME=!SELECTED_PYTHON_HOME:~0,-1!"
+        if defined VENV_HOME if /I not "!VENV_HOME!"=="!SELECTED_PYTHON_HOME!" (
+            echo Existing .venv was created from a different Python: !VENV_HOME!
+            echo Rebuilding it with: !SELECTED_PYTHON_HOME!
+            set "RECREATE_VENV=1"
+        )
+    )
+)
+
 REM - Step 2: Create .venv if it doesn't exist -
+if defined RECREATE_VENV if exist ".venv" (
+    echo Removing stale virtual environment...
+    rmdir /s /q ".venv"
+)
+
 if not exist ".venv\Scripts\python.exe" (
     echo Creating virtual environment with Python 3.10...
     "!PYTHON_EXE!" -m venv .venv
