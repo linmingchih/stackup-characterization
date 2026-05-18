@@ -39,7 +39,7 @@ def create_stackup_model(params):
     config = load_config()
     edb_version = config.get("edb_version", "2024.1")
     # Ensure output path is absolute or relative to cwd correctly
-    edb = Edb(params["output_aedb_path"], version=edb_version)
+    edb = Edb(params["output_aedb_path"], version=edb_version, grpc=False)
 
     copper_cond = params.get("copper_conductivity", 5.8e7)
     edb.materials.add_conductor_material("my_copper", copper_cond)
@@ -83,14 +83,15 @@ def create_stackup_model(params):
                      l_data = params["layers"][i+1]
                      fill_material = f"m_{format_float(l_data.get('dk', 1))}_{format_float(l_data.get('df', 0))}"
 
-            signal_layer = edb.stackup.add_layer(layer_name=layer["layername"],
-                                                 method="add_on_bottom",
-                                                 layer_type='signal',
-                                                 thickness=layer["thickness"],
-                                                 material="my_copper",
-                                                 fillMaterial=fill_material,
-                                                 etch_factor=layer.get("etch_factor", 1.0),
-                                                 enable_roughness=True) 
+            edb.stackup.add_layer(layer_name=layer["layername"],
+                                  method="add_on_bottom",
+                                  layer_type='signal',
+                                  thickness=layer["thickness"],
+                                  material="my_copper",
+                                  filling_material=fill_material,
+                                  etch_factor=layer.get("etch_factor", 1.0),
+                                  enable_roughness=True)
+            signal_layer = edb.stackup.layers[layer["layername"]]
             
             signal_layer.top_hallhuray_nodule_radius = nodule_radius
             signal_layer.top_hallhuray_surface_ratio = surface_ratio
@@ -134,12 +135,24 @@ def create_stackup_model(params):
                                 )
                                                    
 
-    edb.hfss.create_differential_wave_port(line_p, line_p.center_line[0], line_n, line_n.center_line[0], port_name='port1')
-    edb.hfss.create_differential_wave_port(line_p, line_p.center_line[-1], line_n, line_n.center_line[-1], port_name='port2')
+    edb.excitation_manager.create_differential_wave_port(
+        line_p,
+        line_p.center_line[0],
+        line_n,
+        line_n.center_line[0],
+        port_name='port1',
+    )
+    edb.excitation_manager.create_differential_wave_port(
+        line_p,
+        line_p.center_line[-1],
+        line_n,
+        line_n.center_line[-1],
+        port_name='port2',
+    )
     #edb.excitations['port1'].deembed = True
     #edb.excitations['port1'].deembed_length = '-990mil'
 
-    setup = edb.create_hfss_setup()
+    setup = edb.simulation_setups.create()
     setup.adaptive_settings.min_converged_passes = 2
     setup.set_solution_single_frequency(frequency=f'{params["frequency"]}GHz', 
                                         max_num_passes=20, 
@@ -161,7 +174,7 @@ def create_full_stackup(params):
         config = load_config()
         edb_version = config.get("edb_version", "2024.1")
         
-        edb = Edb(output_path, version=edb_version)
+        edb = Edb(output_path, version=edb_version, grpc=False)
         
         copper_cond = params.get("copper_conductivity", 5.8e7)
         edb.materials.add_conductor_material("my_copper", copper_cond)
@@ -217,14 +230,15 @@ def create_full_stackup(params):
                             fill_material = f"m_{format_float(l_data.get('dk', 1) or 1)}_{format_float(l_data.get('df', 0) or 0)}"
                             break
 
-                signal_layer = edb.stackup.add_layer(layer_name=layer_name,
-                                                     method="add_on_bottom",
-                                                     layer_type='signal',
-                                                     thickness=thickness,
-                                                     material=material,
-                                                     fillMaterial=fill_material,
-                                                     etch_factor=etch_factor,
-                                                     enable_roughness=True)
+                edb.stackup.add_layer(layer_name=layer_name,
+                                      method="add_on_bottom",
+                                      layer_type='signal',
+                                      thickness=thickness,
+                                      material=material,
+                                      filling_material=fill_material,
+                                      etch_factor=etch_factor,
+                                      enable_roughness=True)
+                signal_layer = edb.stackup.layers[layer_name]
                 
                 signal_layer.top_hallhuray_nodule_radius = nodule_radius
                 signal_layer.top_hallhuray_surface_ratio = surface_ratio

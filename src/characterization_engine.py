@@ -462,7 +462,19 @@ class CharacterizationEngine:
             self.log(f"[{layer_name}] Iter {iteration_count}: Modeling...")
             script_dir = os.path.dirname(os.path.abspath(__file__))
             modeling_script = os.path.join(script_dir, "modeling.py")
-            subprocess.run([_get_python_exe(), modeling_script, temp_params_path], check=True, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=_hidden_startupinfo())
+            result = subprocess.run(
+                [_get_python_exe(), modeling_script, temp_params_path],
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                startupinfo=_hidden_startupinfo(),
+            )
+            if result.returncode != 0:
+                err_msg = result.stderr.strip() if result.stderr else "No stderr"
+                out_msg = result.stdout.strip() if result.stdout else "No stdout"
+                self.log(f"[{layer_name}] modeling.py STDERR:\n{err_msg}")
+                self.log(f"[{layer_name}] modeling.py STDOUT:\n{out_msg}")
+                raise RuntimeError(f"modeling.py failed (exit code {result.returncode})\n{err_msg}")
             
             # Run Simulation
             self.log(f"[{layer_name}] Iter {iteration_count}: Simulating...")

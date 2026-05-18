@@ -57,9 +57,8 @@ class StackupAPI:
     def _run_engine(self, json_data, max_iter, original_path, symmetry, max_delta_s, freq_stop):
         def log_callback(msg):
             if self.window:
-                # Escape quotes for JS
-                clean_msg = msg.replace("'", "\\'").replace('"', '\\"').replace('\n', '<br>')
-                self.window.evaluate_js(f"addLog('{clean_msg}')")
+                clean_msg = msg.replace('\n', '<br>')
+                self.window.evaluate_js(f"addLog({json.dumps(clean_msg)})")
 
         def stats_callback(layer_name, layer_stats):
             self.stats[layer_name] = layer_stats
